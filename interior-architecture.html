@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interior Architecture Store – Glitch Signal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="container nav-container">
+      <div class="logo"><a href="index.html">Glitch&nbsp;Signal</a></div>
+      <nav id="nav-menu" class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="index.html#services">Services</a>
+        <a href="index.html#portfolio">Portfolio</a>
+        <a href="#cart">Cart (0)</a>
+      </nav>
+      <button id="nav-toggle" aria-label="Toggle navigation">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </button>
+    </div>
+  </header>
+
+  <section class="store-hero">
+    <div class="container">
+      <h1>Interior Architecture Store</h1>
+      <p>Premium layouts, 3D concepts, moodboards, and space planning packs.</p>
+    </div>
+  </section>
+
+  <section class="store-section">
+    <div class="container">
+      <div class="store-grid">
+
+        <div class="product-card">
+          <div class="product-image-wrapper">
+            <img src="images/interior.png" alt="Moodboard Pack">
+          </div>
+          <div class="product-info">
+            <h3>Moodboard Pack</h3>
+            <p>Textures, palettes, and style references.</p>
+            <div class="price">$19.00</div>
+            <button class="add-cart-btn">Add to Cart</button>
+          </div>
+        </div>
+
+        <div class="product-card">
+          <div class="product-image-wrapper">
+            <img src="images/interior.png" alt="3D Living Room Concept">
+          </div>
+          <div class="product-info">
+            <h3>3D Living Room Concept</h3>
+            <p>Modern render + lighting setup.</p>
+            <div class="price">$49.00</div>
+            <button class="add-cart-btn">Add to Cart</button>
+          </div>
+        </div>
+
+        <div class="product-card">
+          <div class="product-image-wrapper">
+            <img src="images/interior.png" alt="Floor Plan Template">
+          </div>
+          <div class="product-info">
+            <h3>Floor Plan Template</h3>
+            <p>Clean CAD-style layout for client work.</p>
+            <div class="price">$25.00</div>
+            <button class="add-cart-btn">Add to Cart</button>
+          </div>
+        </div>
+
+        <div class="product-card">
+          <div class="product-image-wrapper">
+            <img src="images/interior.png" alt="Material Library">
+          </div>
+          <div class="product-info">
+            <h3>Material Library</h3>
+            <p>High-quality materials: wood, marble, concrete.</p>
+            <div class="price">$35.00</div>
+            <button class="add-cart-btn">Add to Cart</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2019–2025 Glitch Signal. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+  renderStoreProducts({ category: "interior", gridId: "store-grid" });
+</script>
+</body>
+</html>

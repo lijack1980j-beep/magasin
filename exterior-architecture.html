@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exterior Architecture Store – Glitch Signal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="container nav-container">
+      <div class="logo"><a href="index.html">Glitch&nbsp;Signal</a></div>
+      <nav id="nav-menu" class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="index.html#services">Services</a>
+        <a href="index.html#portfolio">Portfolio</a>
+        <a href="#cart">Cart (0)</a>
+      </nav>
+      <button id="nav-toggle" aria-label="Toggle navigation">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </button>
+    </div>
+  </header>
+
+  <section class="store-hero">
+    <div class="container">
+      <h1>Exterior Architecture Store</h1>
+      <p>Premium facade designs, 3D exteriors, landscape layouts, and renders.</p>
+    </div>
+  </section>
+
+  <section class="store-section">
+    <div class="container">
+      <div class="store-grid">
+
+        <div class="product-card">
+          <div class="product-image-wrapper">
+            <img src="images/exterior.png" alt="Facade Concept">
+          </div>
+          <div class="product-info">
+            <h3>Modern Facade Concept</h3>
+            <p>Clean exterior elevation with materials.</p>
+            <div class="price">$39.00</div>
+            <button class="add-cart-btn">Add to Cart</button>
+          </div>
+        </div>
+
+        <div class="product-card">
+          <div class="product-image-wrapper">
+            <img src="images/exterior.png" alt="3D Exterior Render">
+          </div>
+          <div class="product-info">
+            <h3>3D Exterior Render</h3>
+            <p>High-quality render with realistic lighting.</p>
+            <div class="price">$59.00</div>
+            <button class="add-cart-btn">Add to Cart</button>
+          </div>
+        </div>
+
+        <div class="product-card">
+          <div class="product-image-wrapper">
+            <img src="images/exterior.png" alt="Landscape Design">
+          </div>
+          <div class="product-info">
+            <h3>Landscape Design Pack</h3>
+            <p>Paths, greenery, and outdoor elements.</p>
+            <div class="price">$29.00</div>
+            <button class="add-cart-btn">Add to Cart</button>
+          </div>
+        </div>
+
+        <div class="product-card">
+          <div class="product-image-wrapper">
+            <img src="images/exterior.png" alt="Villa Exterior">
+          </div>
+          <div class="product-info">
+            <h3>Luxury Villa Exterior</h3>
+            <p>Premium concept for high-end projects.</p>
+            <div class="price">$79.00</div>
+            <button class="add-cart-btn">Add to Cart</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2019–2025 Glitch Signal. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+  renderStoreProducts({ category: "exterior", gridId: "store-grid" });
+</script>
+</body>
+</html>
