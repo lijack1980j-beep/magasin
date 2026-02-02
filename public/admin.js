@@ -17,3 +17,21 @@ export async function uploadProjectImage(file) {
 
   return data.publicUrl;
 }
+
+async function submitProject() {
+  const file = document.querySelector("#coverFile").files[0];
+  const title = document.querySelector("#title").value;
+
+  const coverUrl = await uploadProjectImage(file);
+
+  const { error } = await supabase.from("projects").insert({
+    title,
+    category: "uiux",
+    cover_image_url: coverUrl
+  });
+
+  if (error) alert(error.message);
+  else alert("Project saved ✅");
+}
+
+window.submitProject = submitProject;
