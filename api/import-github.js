@@ -1,23 +1,13 @@
-import { createClient } from "@supabase/supabase-js";
+const { createClient } = require("@supabase/supabase-js");
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-export default async function handler(req, res) {
-  try {
-    const { repoFullName, title, category, tags, liveUrl, coverImageUrl } = req.body;
-
-    // 1) Fetch from GitHub
-    const ghRes = await fetch(`https://api.github.com/repos/${repoFullName}`, {
-      headers: {
-        Accept: "application/vnd.github+json",
-        Authorization: process.env.GITHUB_TOKEN
-          ? `Bearer ${process.env.GITHUB_TOKEN}`
-          : undefined,
-      },
-    });
+module.exports = async (req, res) => {
+  return res.status(200).json({ ok: true, message: "API works ✅" });
+};
 
     if (!ghRes.ok) {
       return res.status(400).json({ error: "GitHub repo not found" });
