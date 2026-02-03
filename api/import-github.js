@@ -6,8 +6,35 @@ const supabase = createClient(
 );
 
 module.exports = async (req, res) => {
-  return res.status(200).json({ ok: true, message: "API works ✅" });
-};
+  try {
+    // Only allow POST
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Use POST" });
+    }
+
+    // Read body (Vercel provides req.body already)
+    const {
+      repoFullName,    // "username/repo"
+      title,
+      category,
+      tags,
+      liveUrl,
+      coverImageUrl
+    } = req.body || {};
+
+    if (!repoFullName) {
+      return res.status(400).json({ error: "repoFullName is required" });
+    }
+
+    // 1) Fetch from GitHub
+    const ghRes = await fetch(`https://api.github.com/repos/${repoFullName}`, {
+      headers: {
+        Accept: "application/vnd.github+json",
+        ...(process.env.GITHUB_TOKEN
+          ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
+          : {}),
+      },
+    });
 
     if (!ghRes.ok) {
       return res.status(400).json({ error: "GitHub repo not found" });
@@ -15,7 +42,7 @@ module.exports = async (req, res) => {
 
     const repo = await ghRes.json();
 
-    // 2) Save to Supabase
+    // 2) Save to Supabase (upsert)
     const { data, error } = await supabase
       .from("projects")
       .upsert(
@@ -27,10 +54,10 @@ module.exports = async (req, res) => {
           forks_count: repo.forks_count,
           language: repo.language,
 
-          title,
+          title: title || repo.name,
           description: repo.description,
           category: category || "uiux",
-          tags: tags || [],
+          tags: Array.isArray(tags) ? tags : [],
           live_url: liveUrl || null,
           cover_image_url: coverImageUrl || null,
 
@@ -41,10 +68,12 @@ module.exports = async (req, res) => {
       .select()
       .single();
 
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
 
     return res.status(200).json({ ok: true, project: data });
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }
-}
+};
