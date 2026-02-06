@@ -3,184 +3,59 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Glitch Signal – Design Studio</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <title>Architecture & Design</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <header class="navbar">
-    <div class="container nav-container">
-      <div class="logo"><a href="index.html">Glitch&nbsp;Signal</a></div>
-      <nav id="nav-menu" class="nav-links">
-        
-        <a href="index.html#about">About</a>
-        <a href="index.html#services">Services</a>
-        <a href="index.html#portfolio">Portfolio</a>
-        <a href="index.html#contact">Contact</a>
-        <a href="#" id="cart-link">Cart (<span id="cart-count">0</span>)</a>
-        <a href="admin.html">Admin</a>
-      </nav>
-      <button id="nav-toggle" aria-label="Toggle navigation">
-        <span class="bar"></span>
-        <span class="bar"></span>
-        <span class="bar"></span>
-      </button>
-    </div>
-  </header>
 
-  <section class="hero" id="home">
-    <div class="hero-bg" aria-hidden="true"></div>
-    <div class="hero-shade" aria-hidden="true"></div>
-
-    <div class="hero-content container">
-      <h1 class="hero-title" data-text="GLITCH SIGNAL">GLITCH SIGNAL</h1>
-      <p class="tagline">Designing digital & physical spaces with purpose</p>
-      <a href="#about" class="cta-button">Discover more</a>
+  <!-- HERO SECTION -->
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-content">
+      <h1>Design That Speaks</h1>
+      <p>Architecture • Interior • UI/UX</p>
     </div>
   </section>
 
+  <!-- SERVICES -->
+  <section class="services">
+    <h2>Our Services</h2>
 
-  <section id="about" class="about container">
-    <h2>About Us</h2>
-    <p>
-      Glitch&nbsp;Signal is a multidisciplinary design studio based in Finland. We
-      specialise in crafting compelling user interfaces, intuitive user
-      experiences, and elegant architectural spaces — both interior and exterior.
-    </p>
-    <p>
-      With over six years of professional experience, our team blends digital
-      product design with spatial thinking. This unique cross‑disciplinary
-      perspective allows us to deliver cohesive solutions that elevate brands and
-      enrich everyday life.
-    </p>
-  </section>
+    <div class="services-grid">
 
-  <section id="services" class="services">
-    <div class="container">
-      <h2>Our Services & Store</h2>
-      <div class="service-cards">
-        
-        <a href="ui-ux-store.html" class="card-link">
-          <div class="card">
-            <div  class="card-image">
-              <div style= "background-image: url(/images/uiux.png);">
-              </div>
-             
-
-            </div>
-            <h3>UI/UX Design</h3>
-            <p>
-              We create digital experiences that are both beautiful and usable. 
-              <strong>Click here to view our digital products.</strong>
-            </p>
-          </div>
-        </a>
-
-        <a href="interior-architecture.html" class="card-link">
-          <div class="card">
-            <div class="card-image">
-              <background-image: url("/images/hero-image.png");>
-
-            </div>
-            <h3>Interior Architecture</h3>
-            <p>
-              Our interiors balance form and function. We design human‑centred
-              environments — from residences to commercial spaces.
-            </p>
-          </div>
-        </a>
-
-
-        <a href="exterior-architecture.html" class="card-link">
-          <div class="card">
-           <div class="card-image">
-             <img src="images/exterior.png" alt="Exterior architecture design" />
-           </div>
-           <h3>Exterior Architecture</h3>
-           <p>
-             We conceive striking building exteriors that complement their
-              surroundings. Our designs fuse sustainability and aesthetics.
-            </p>
-         </div>
-
-        </a>
-
+      <div class="service-card">
+        <div class="card-image uiux-bg"></div>
+        <h3>UI / UX Design</h3>
+        <p>Modern digital experiences with clean visuals.</p>
       </div>
-    </div>
-  </section>
 
-  <section id="portfolio" class="portfolio">
-    <div class="container">
-      <h2>Selected Projects</h2>
-      <div class="portfolio-gallery">
-        <div class="project">
-          <img src="images/uiux.png" alt="Digital experience project" />
-          <div class="project-overlay">
-            <h4>Digital Experience</h4>
-            <p>User interface &amp; interaction design</p>
-          </div>
-        </div>
-        <div class="project">
-          <img src="images/interior.png" alt="Interior design project" />
-          <div class="project-overlay">
-            <h4>Interior Concept</h4>
-            <p>Residential living space</p>
-          </div>
-        </div>
-        <div class="project">
-          <img src="images/exterior.png" alt="Exterior design project" />
-          <div class="project-overlay">
-            <h4>Exterior Design</h4>
-            <p>Modern architecture</p>
-          </div>
-        </div>
+      <div class="service-card">
+        <div class="card-image interior-bg"></div>
+        <h3>Interior Architecture</h3>
+        <p>Functional and aesthetic interior solutions.</p>
       </div>
+
+      <div class="service-card">
+        <img src="/images/exterior.png" alt="Exterior Architecture" />
+        <h3>Exterior Architecture</h3>
+        <p>Bold structures with timeless identity.</p>
+      </div>
+
     </div>
   </section>
 
-  <section id="contact" class="contact">
-    <div class="container">
-      <h2>Get in touch</h2>
-      <p>
-        Interested in working together or have a question? Send us a message and
-        we’ll get back to you soon.
-      </p>
-      <form class="contact-form" onsubmit="event.preventDefault(); alert('Thank you! We will be in touch.');">
-        <div class="form-group">
-          <label for="name">Name</label>
-          <input type="text" id="name" name="name" placeholder="Your name" required />
-        </div>
-        <div class="form-group">
-          <label for="email">Email</label>
-          <input type="email" id="email" name="email" placeholder="you@example.com" required />
-        </div>
-        <div class="form-group">
-          <label for="message">Message</label>
-          <textarea id="message" name="message" rows="4" placeholder="Tell us about your project..." required></textarea>
-        </div>
-        <button type="submit" class="submit-button">Send Message</button>
-      </form>
-      <p class="email-link">
-        Or email us directly at
-        <a href="mailto:contact@glitchsignal.com">contact@glitchsignal.com</a>
-      </p>
+  <!-- PORTFOLIO -->
+  <section class="portfolio">
+    <h2>Portfolio</h2>
+
+    <div class="portfolio-grid">
+      <img src="/images/uiux.png" alt="UI UX Project" />
+      <img src="/images/interior.png" alt="Interior Project" />
+      <img src="/images/exterior.png" alt="Exterior Project" />
     </div>
   </section>
 
-  <footer class="footer">
-    <div class="container">
-      <p>&copy; 2019–2025 Glitch Signal. All rights reserved.</p>
-    </div>
-  </footer>
-
-  <script src="store-data.js"></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
