@@ -570,4 +570,9 @@ section h2::after {
   .cta-button {
     padding: 0.6rem 1.5rem;
   }
+
+  .exterior.png {
+    width: 100%;
+    height: auto;
+  }
 }
