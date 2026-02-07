@@ -571,7 +571,8 @@ section h2::after {
     padding: 0.6rem 1.5rem;
   }
 
-  .exterior.png {
+  /* CORRECTED SECTION HERE */
+  .exterior-image {
     width: 100%;
     height: auto;
   }
