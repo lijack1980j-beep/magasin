@@ -5,25 +5,72 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// ✅ put your real table name here
+const TABLE_NAME = process.env.CONTACT_TABLE || "contact_messages";
+
 module.exports = async (req, res) => {
   try {
     if (req.method !== "POST") return res.status(405).json({ error: "Use POST" });
 
     const { name, email, message } = req.body || {};
     if (!name || !email || !message) {
-      return res.status(400).json({ error: "Missing fields" });
+      return res.status(400).json({ error: "name, email, message required" });
     }
 
-    const { error } = await supabase.from("contact_messages").insert({
-      name,
-      email,
-      message
+    // 1) Save in Supabase
+    const { error: dbErr } = await supabase.from(TABLE_NAME).insert({
+      name: String(name).trim(),
+      email: String(email).trim(),
+      message: String(message).trim(),
     });
 
-    if (error) return res.status(500).json({ error: error.message });
+    if (dbErr) return res.status(500).json({ error: dbErr.message });
+
+    // 2) Send email to your Gmail (notification)
+    // Requires RESEND_API_KEY + CONTACT_TO_EMAIL + FROM_EMAIL in Vercel env vars
+    if (process.env.RESEND_API_KEY && process.env.CONTACT_TO_EMAIL && process.env.FROM_EMAIL) {
+      const subject = `New message from ${String(name).trim()}`;
+
+      const html = `
+        <h2>New Contact Message</h2>
+        <p><b>Name:</b> ${escapeHtml(name)}</p>
+        <p><b>Email:</b> ${escapeHtml(email)}</p>
+        <p><b>Message:</b><br/>${escapeHtml(message).replace(/\n/g, "<br/>")}</p>
+      `;
+
+      const r = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: process.env.FROM_EMAIL,            // must be verified in Resend
+          to: [process.env.CONTACT_TO_EMAIL],      // your Gmail address
+          subject,
+          html,
+          reply_to: String(email).trim(),          // so you can reply directly in Gmail
+        }),
+      });
+
+      if (!r.ok) {
+        const errText = await r.text();
+        // Don’t fail the request if email fails; DB is already saved
+        console.error("Resend error:", errText);
+      }
+    }
 
     return res.status(200).json({ ok: true });
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }
 };
+
+function escapeHtml(s) {
+  return String(s ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
