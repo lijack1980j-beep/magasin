@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Glitch Signal – Project Gallery</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <!-- Navbar (same structure as your index.html) -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <div class="logo"><a href="/index.html">Glitch&nbsp;Signal</a></div>
+
+      <nav id="nav-menu" class="nav-links">
+        <a href="/index.html#about">About</a>
+        <a href="/index.html#services">Services</a>
+        <a href="/gallery.html">Gallery</a>
+        <a href="/index.html#contact">Contact</a>
+        <a href="#" id="cart-link">Cart (<span id="cart-count">0</span>)</a>
+        <a href="/admin.html">Admin</a>
+      </nav>
+
+      <button id="nav-toggle" aria-label="Toggle navigation">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="gallery-hero">
+    <div class="container">
+      <h1 class="gallery-title">Project Gallery</h1>
+      <p class="gallery-subtitle">Browse projects by category. Filter + search to find what you need.</p>
+
+      <div class="gallery-controls">
+        <input id="searchInput" class="gallery-search" type="search" placeholder="Search projects (title, tags, description)..." />
+
+        <select id="sortSelect" class="gallery-sort">
+          <option value="new">Newest</option>
+          <option value="stars">Most stars</option>
+          <option value="az">A → Z</option>
+        </select>
+      </div>
+
+      <div id="filters" class="gallery-filters"></div>
+    </div>
+  </section>
+
+  <!-- Content -->
+  <main class="gallery-main">
+    <div class="container">
+      <div id="galleryRoot"></div>
+      <p id="galleryStatus" class="gallery-status"></p>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2019–2025 Glitch Signal. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Your existing scripts -->
+  <script src="/script.js"></script>
+  <script src="/store-data.js"></script>
+
+  <!-- Gallery page logic -->
+  <script type="module" src="/gallery.js"></script>
+</body>
+</html>
