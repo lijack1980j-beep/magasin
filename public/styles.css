@@ -531,6 +531,28 @@ section h2::after {
   border-color: var(--accent-color);
   color: var(--bg-color);
 }
+.card-image {
+  height: 220px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Background images */
+.uiux-bg { background-image: url("/images/uiux.png"); }
+.interior-bg { background-image: url("/images/interior.png"); }
+
+/* If you use <img> inside card-image */
+.card-image img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 
 /* Responsive styles */
 @media (max-width: 768px) {
@@ -576,3 +598,4 @@ section h2::after {
     height: auto;
   }
 }
+
