@@ -814,4 +814,24 @@ section h2::after {
   }
 }
 
+/* =========================
+   ADMIN DASHBOARD CENTERING
+   ========================= */
+
+/* Make the dashboard section full width, but center its content */
+#admin-dashboard{
+  width: 100%;
+}
+
+/* Center the top header row and the main grid/card area */
+#admin-dashboard .split,
+#admin-dashboard .admin-grid{
+  width: 90%;
+  max-width: var(--max-width);
+  margin-inline: auto;     /* ✅ centers */
+  padding-inline: 20px;    /* ✅ safe spacing on mobile */
+  box-sizing: border-box;
+}
+
+
 
