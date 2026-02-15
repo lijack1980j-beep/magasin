@@ -820,7 +820,7 @@ section h2::after {
 
 /* Make the dashboard section full width, but center its content */
 #admin-dashboard{
-  width: 100%;
+  width: 120%;
 }
 
 /* Center the top header row and the main grid/card area */
