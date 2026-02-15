@@ -129,6 +129,63 @@
           Prototype mode: password is stored locally in your browser.
         </div>
       </section>
+      <section class="container" style="padding-top:140px;">
+  <h2>Gallery Manager</h2>
+
+  <div style="max-width:900px;margin:0 auto;">
+    <label style="display:block;margin:10px 0 6px;">Admin API Key (from Vercel)</label>
+    <input id="adminKey" type="password" placeholder="Enter ADMIN_API_KEY" style="width:100%;padding:12px;border-radius:8px;background:#131313;border:1px solid rgba(255,255,255,.12);color:#fff;" />
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+      <input id="pTitle" placeholder="Title" style="padding:12px;border-radius:8px;background:#131313;border:1px solid rgba(255,255,255,.12);color:#fff;" />
+      <select id="pCategory" style="padding:12px;border-radius:8px;background:#131313;border:1px solid rgba(255,255,255,.12);color:#fff;">
+        <option value="uiux">UI/UX</option>
+        <option value="interior">Interior</option>
+        <option value="exterior">Exterior</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+
+    <textarea id="pDescription" placeholder="Description" rows="4"
+      style="width:100%;margin-top:12px;padding:12px;border-radius:8px;background:#131313;border:1px solid rgba(255,255,255,.12);color:#fff;"></textarea>
+
+    <input id="pTags" placeholder="Tags (comma separated) e.g. modern, minimal, figma"
+      style="width:100%;margin-top:12px;padding:12px;border-radius:8px;background:#131313;border:1px solid rgba(255,255,255,.12);color:#fff;" />
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+      <input id="pLive" placeholder="Live URL (optional)" style="padding:12px;border-radius:8px;background:#131313;border:1px solid rgba(255,255,255,.12);color:#fff;" />
+      <input id="pRepo" placeholder="GitHub URL (optional)" style="padding:12px;border-radius:8px;background:#131313;border:1px solid rgba(255,255,255,.12);color:#fff;" />
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;align-items:center;">
+      <label style="display:flex;gap:8px;align-items:center;color:#ccc;">
+        <input id="pFeatured" type="checkbox" />
+        Featured
+      </label>
+      <input id="pSort" type="number" placeholder="Sort order (0..)" value="0"
+        style="padding:12px;border-radius:8px;background:#131313;border:1px solid rgba(255,255,255,.12);color:#fff;" />
+    </div>
+
+    <div style="margin-top:12px;">
+      <label style="display:block;margin-bottom:6px;color:#ccc;">Cover image (upload) OR paste image URL</label>
+      <input id="pFile" type="file" accept="image/*" style="width:100%;color:#ccc;" />
+      <input id="pImageUrl" placeholder="OR image URL (optional)"
+        style="width:100%;margin-top:10px;padding:12px;border-radius:8px;background:#131313;border:1px solid rgba(255,255,255,.12);color:#fff;" />
+    </div>
+
+    <button id="saveProjectBtn" class="submit-button" style="margin-top:14px;">Save to Gallery</button>
+    <p id="adminStatus" style="margin-top:10px;color:#ccc;"></p>
+
+    <hr style="border-color:rgba(255,255,255,.08);margin:24px 0;" />
+
+    <h3 style="margin-bottom:10px;">Existing Gallery Projects</h3>
+    <div id="projectsList" style="display:grid;gap:12px;"></div>
+  </div>
+</section>
+
+<script src="/admin-gallery.js"></script>
+
+      
 
       <!-- DASHBOARD -->
       <section id="admin-dashboard" class="hidden">
@@ -634,3 +691,4 @@
   </script>
 </body>
 </html>
+
