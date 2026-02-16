@@ -2,6 +2,8 @@ import { supabase } from "/supabaseClient.js";
 
 const root = document.getElementById("galleryRoot");
 const statusEl = document.getElementById("galleryStatus");
+
+// Optional UI elements (may be missing depending on your gallery.html)
 const filtersEl = document.getElementById("filters");
 const searchInput = document.getElementById("searchInput");
 const sortSelect = document.getElementById("sortSelect");
@@ -42,7 +44,7 @@ function normalizeCategory(c) {
   if (s.includes("ui")) return "uiux";
   if (s.includes("inter")) return "interior";
   if (s.includes("exter")) return "exterior";
-  if (["uiux", "interior", "exterior"].includes(s)) return s;
+  if (["uiux", "interior", "exterior", "other"].includes(s)) return s;
   return "other";
 }
 
@@ -51,12 +53,10 @@ function getDefaultImage(cat) {
 }
 
 function getLocalProjects() {
-  // Your older localStorage store
   const KEY = "gs_projects";
   try {
     const arr = JSON.parse(localStorage.getItem(KEY) || "[]");
     if (!Array.isArray(arr)) return [];
-    // Normalize to a consistent shape
     return arr.map((p, i) => ({
       id: p.id || p.repo_full_name || `local-${i}`,
       title: p.title || p.name || "Untitled",
@@ -75,39 +75,6 @@ function getLocalProjects() {
   }
 }
 
-async function loadProjects() {
-  statusEl.textContent = "Loading projects...";
-  try {
-    // Supabase (recommended)
-    const { data, error } = await supabase
-      .from("projects")
-      .select("id,title,description,category,tags,cover_image_url,repo_url,live_url,stars_count,created_at,repo_full_name")
-      .order("created_at", { ascending: false });
-
-    if (error) throw error;
-
-    const normalized = (data || []).map((p) => ({
-      ...p,
-      category: normalizeCategory(p.category),
-      tags: Array.isArray(p.tags) ? p.tags : [],
-      stars_count: Number(p.stars_count || 0),
-    }));
-
-    state.projects = normalized;
-    statusEl.textContent = normalized.length ? "" : "No projects found yet.";
-    render();
-    return;
-  } catch (e) {
-    console.warn("Supabase fetch failed, fallback to localStorage:", e?.message);
-  }
-
-  // Fallback: localStorage
-  const local = getLocalProjects();
-  state.projects = local;
-  statusEl.textContent = local.length ? "" : "No projects found (Supabase + localStorage empty).";
-  render();
-}
-
 function applyFilters(list) {
   let out = [...list];
 
@@ -115,8 +82,7 @@ function applyFilters(list) {
   const q = state.q.toLowerCase().trim();
   if (q) {
     out = out.filter((p) => {
-      const hay =
-        `${p.title} ${p.description} ${(p.tags || []).join(" ")} ${p.repo_full_name || ""}`.toLowerCase();
+      const hay = `${p.title} ${p.description} ${(p.tags || []).join(" ")} ${p.repo_full_name || ""}`.toLowerCase();
       return hay.includes(q);
     });
   }
@@ -132,7 +98,7 @@ function applyFilters(list) {
   } else if (state.sort === "az") {
     out.sort((a, b) => String(a.title).localeCompare(String(b.title)));
   } else {
-    // newest: use created_at if exists, else keep original order
+    // newest
     out.sort((a, b) => {
       const da = a.created_at ? new Date(a.created_at).getTime() : 0;
       const db = b.created_at ? new Date(b.created_at).getTime() : 0;
@@ -141,6 +107,16 @@ function applyFilters(list) {
   }
 
   return out;
+}
+
+// counts ignore category selection but include search
+function applyFiltersForCounts(list) {
+  const q = state.q.toLowerCase().trim();
+  if (!q) return list;
+  return list.filter((p) => {
+    const hay = `${p.title} ${p.description} ${(p.tags || []).join(" ")} ${p.repo_full_name || ""}`.toLowerCase();
+    return hay.includes(q);
+  });
 }
 
 function countByCategory(list) {
@@ -153,6 +129,8 @@ function countByCategory(list) {
 }
 
 function renderFilters() {
+  if (!filtersEl) return; // ✅ no crash if missing
+
   const counts = countByCategory(applyFiltersForCounts(state.projects));
   const chips = [
     ["all", `All (${counts.all})`],
@@ -177,28 +155,18 @@ function renderFilters() {
   });
 }
 
-// counts should ignore category filter but include search text + sort not relevant
-function applyFiltersForCounts(list) {
-  const q = state.q.toLowerCase().trim();
-  if (!q) return list;
-  return list.filter((p) => {
-    const hay =
-      `${p.title} ${p.description} ${(p.tags || []).join(" ")} ${p.repo_full_name || ""}`.toLowerCase();
-    return hay.includes(q);
-  });
-}
-
 function projectCard(p) {
   const cat = normalizeCategory(p.category);
   const img = p.cover_image_url || getDefaultImage(cat);
   const tags = (p.tags || []).slice(0, 6);
 
-  const repo = p.repo_url ? `<a class="mini-link" href="${escapeHtml(p.repo_url)}" target="_blank" rel="noopener">GitHub</a>` : "";
-  const live = p.live_url ? `<a class="mini-link" href="${escapeHtml(p.live_url)}" target="_blank" rel="noopener">Live</a>` : "";
+  const repo = p.repo_url
+    ? `<a class="mini-link" href="${escapeHtml(p.repo_url)}" target="_blank" rel="noopener">GitHub</a>`
+    : "";
 
-  // Use repo_full_name or id for detail navigation
-  const detailKey = encodeURIComponent(p.id || p.repo_full_name || "");
-  const detailHref = detailKey ? `/project-detail.html?id=${detailKey}` : "#";
+  const live = p.live_url
+    ? `<a class="mini-link" href="${escapeHtml(p.live_url)}" target="_blank" rel="noopener">Live</a>`
+    : "";
 
   return `
     <article class="g-card">
@@ -215,7 +183,7 @@ function projectCard(p) {
           <span class="g-stars">★ ${Number(p.stars_count || 0)}</span>
         </div>
 
-        <h3 class="g-title">${escapeHtml(p.title)}</h3>
+        <h3 class="g-title">${escapeHtml(p.title || "Untitled")}</h3>
         <p class="g-desc">${escapeHtml(p.description || "")}</p>
 
         <div class="g-tags">
@@ -223,7 +191,6 @@ function projectCard(p) {
         </div>
 
         <div class="g-actions">
-          <a class="mini-link" href="${detailHref}">Details</a>
           ${repo}
           ${live}
         </div>
@@ -234,4 +201,93 @@ function projectCard(p) {
 
 function renderGrouped(list) {
   const groups = { uiux: [], interior: [], exterior: [], other: [] };
-  for (const p of list) groups[normalizeCategory(p.catego]()
+  for (const p of list) {
+    const c = normalizeCategory(p.category);
+    groups[c].push(p);
+  }
+
+  const order = ["uiux", "interior", "exterior", "other"];
+
+  root.innerHTML = order
+    .filter((k) => groups[k].length)
+    .map((k) => `
+      <section class="g-section">
+        <h2 class="g-section-title">${escapeHtml(CATEGORY_LABELS[k] || "Other")}</h2>
+        <div class="g-grid">
+          ${groups[k].map(projectCard).join("")}
+        </div>
+      </section>
+    `)
+    .join("");
+
+  if (!root.innerHTML.trim()) {
+    root.innerHTML = `<p class="gallery-empty">No projects match your filters.</p>`;
+  }
+}
+
+function renderFlat(list) {
+  root.innerHTML = `<div class="g-grid">${list.map(projectCard).join("")}</div>`;
+}
+
+function render() {
+  if (!root) return;
+  renderFilters();
+
+  const filtered = applyFilters(state.projects);
+  if (!filtered.length) {
+    root.innerHTML = `<p class="gallery-empty">No projects found.</p>`;
+    return;
+  }
+
+  // If "All" show grouped sections, else show grid
+  if (state.category === "all") renderGrouped(filtered);
+  else renderFlat(filtered);
+}
+
+async function loadProjects() {
+  if (statusEl) statusEl.textContent = "Loading projects...";
+
+  try {
+    const { data, error } = await supabase
+      .from("projects")
+      .select("id,title,description,category,tags,cover_image_url,repo_url,live_url,stars_count,created_at,repo_full_name")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    state.projects = (data || []).map((p) => ({
+      ...p,
+      category: normalizeCategory(p.category),
+      tags: Array.isArray(p.tags) ? p.tags : [],
+      stars_count: Number(p.stars_count || 0),
+    }));
+
+    if (statusEl) statusEl.textContent = state.projects.length ? "" : "No projects found yet.";
+    render();
+    return;
+  } catch (e) {
+    console.warn("Supabase fetch failed, fallback to localStorage:", e?.message);
+  }
+
+  // fallback
+  state.projects = getLocalProjects();
+  if (statusEl) statusEl.textContent = state.projects.length ? "" : "No projects found (Supabase + localStorage empty).";
+  render();
+}
+
+// Hook UI only if elements exist ✅
+if (searchInput) {
+  searchInput.addEventListener("input", (e) => {
+    state.q = e.target.value || "";
+    render();
+  });
+}
+
+if (sortSelect) {
+  sortSelect.addEventListener("change", (e) => {
+    state.sort = e.target.value || "new";
+    render();
+  });
+}
+
+loadProjects();
