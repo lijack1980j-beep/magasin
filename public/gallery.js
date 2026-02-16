@@ -28,6 +28,11 @@ const state = {
   q: "",
   sort: "new",
 };
+// ✅ Read category from URL: /gallery.html?cat=uiux
+const params = new URLSearchParams(window.location.search);
+const urlCat = params.get("cat");
+if (urlCat) state.category = normalizeCategory(urlCat);
+
 
 function escapeHtml(str) {
   return String(str ?? "")
@@ -274,6 +279,8 @@ async function loadProjects() {
   if (statusEl) statusEl.textContent = state.projects.length ? "" : "No projects found (Supabase + localStorage empty).";
   render();
 }
+
+
 
 // Hook UI only if elements exist ✅
 if (searchInput) {
