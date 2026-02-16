@@ -250,29 +250,28 @@ function render() {
 }
 
 async function loadProjects() {
-  if (statusEl) statusEl.textContent = "Loading projects...";
-
+  statusEl.textContent = "Loading projects...";
   try {
-    const { data, error } = await supabase
-      .from("projects")
-      .select("id,title,description,category,tags,cover_image_url,repo_url,live_url,stars_count,created_at,repo_full_name")
-      .order("created_at", { ascending: false });
+    const res = await fetch("/api/projects");
+    const json = await res.json();
 
-    if (error) throw error;
+    if (!res.ok || !json.ok) throw new Error(json.error || "Failed to load");
 
-    state.projects = (data || []).map((p) => ({
+    state.projects = (json.projects || []).map((p) => ({
       ...p,
       category: normalizeCategory(p.category),
       tags: Array.isArray(p.tags) ? p.tags : [],
       stars_count: Number(p.stars_count || 0),
     }));
 
-    if (statusEl) statusEl.textContent = state.projects.length ? "" : "No projects found yet.";
+    statusEl.textContent = state.projects.length ? "" : "No projects found yet.";
     render();
-    return;
   } catch (e) {
-    console.warn("Supabase fetch failed, fallback to localStorage:", e?.message);
+    statusEl.textContent = "Gallery error: " + e.message;
+    console.error(e);
   }
+}
+
 
   // fallback
   state.projects = getLocalProjects();
