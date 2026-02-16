@@ -52,6 +52,9 @@ function normalizeCategory(c) {
   if (["uiux", "interior", "exterior", "other"].includes(s)) return s;
   return "other";
 }
+const params = new URLSearchParams(window.location.search);
+const urlCat = params.get("cat");
+if (urlCat) state.category = normalizeCategory(urlCat);
 
 function getDefaultImage(cat) {
   return CATEGORY_DEFAULT_IMAGE[cat] || CATEGORY_DEFAULT_IMAGE.other;
