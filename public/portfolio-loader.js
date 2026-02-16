@@ -19,6 +19,46 @@ function normalizeCategory(c){
   if (["uiux","interior","exterior","other"].includes(s)) return s;
   return "other";
 }
+async function loadFeatured() {
+  const el = document.getElementById("portfolioGallery");
+  if (!el) return;
+
+  el.innerHTML = `<p style="color:#999;text-align:center;">Loading...</p>`;
+
+  const res = await fetch("/api/projects");
+  const json = await res.json();
+
+  if (!res.ok || !json.ok) {
+    el.innerHTML = `<p style="color:#999;text-align:center;">${json.error || "Error loading"}</p>`;
+    return;
+  }
+
+  const featured = (json.projects || []).filter(p => p.featured);
+
+  if (!featured.length) {
+    el.innerHTML = `<p style="color:#999;text-align:center;">No featured projects yet. Tick “Featured” in Admin.</p>`;
+    return;
+  }
+
+  el.innerHTML = featured.slice(0, 6).map(p => {
+    const cat = String(p.category || "other").toLowerCase();
+    const img = p.cover_image_url || "/images/hero-image.png";
+    return `
+      <a class="project-link" href="/gallery.html?cat=${encodeURIComponent(cat)}">
+        <div class="project">
+          <img src="${img}" alt="${p.title || "Project"}"
+               onerror="this.onerror=null;this.src='/images/hero-image.png';" />
+          <div class="project-overlay">
+            <h4>${p.title || "Project"}</h4>
+            <p>${p.description || ""}</p>
+          </div>
+        </div>
+      </a>
+    `;
+  }).join("");
+}
+
+loadFeatured();
 
 async function load(){
   if (!el) return;
