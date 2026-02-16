@@ -57,26 +57,26 @@ function getDefaultImage(cat) {
   return CATEGORY_DEFAULT_IMAGE[cat] || CATEGORY_DEFAULT_IMAGE.other;
 }
 
-function getLocalProjects() {
-  const KEY = "gs_projects";
+async function loadProjects() {
+  statusEl.textContent = "Loading projects...";
   try {
-    const arr = JSON.parse(localStorage.getItem(KEY) || "[]");
-    if (!Array.isArray(arr)) return [];
-    return arr.map((p, i) => ({
-      id: p.id || p.repo_full_name || `local-${i}`,
-      title: p.title || p.name || "Untitled",
-      description: p.description || "",
+    const res = await fetch("/api/projects");
+    const json = await res.json();
+
+    if (!res.ok || !json.ok) throw new Error(json.error || "Failed to load");
+
+    state.projects = (json.projects || []).map((p) => ({
+      ...p,
       category: normalizeCategory(p.category),
       tags: Array.isArray(p.tags) ? p.tags : [],
-      cover_image_url: p.cover_image_url || p.coverImageUrl || "",
-      repo_url: p.repo_url || p.github || p.repoUrl || "",
-      live_url: p.live_url || p.liveUrl || "",
-      stars_count: Number(p.stars_count || p.stars || 0),
-      created_at: p.created_at || null,
-      repo_full_name: p.repo_full_name || "",
+      stars_count: Number(p.stars_count || 0),
     }));
-  } catch {
-    return [];
+
+    statusEl.textContent = state.projects.length ? "" : "No projects found yet.";
+    render();
+  } catch (e) {
+    statusEl.textContent = "Gallery error: " + e.message;
+    console.error(e);
   }
 }
 
