@@ -4,6 +4,16 @@ function setStatus(msg) {
   if (statusEl) statusEl.textContent = msg || "";
 }
 
+const adminKeyInput = document.getElementById("adminKey");
+if (adminKeyInput) {
+  const saved = localStorage.getItem("GS_ADMIN_KEY");
+  if (saved && !adminKeyInput.value) adminKeyInput.value = saved;
+
+  adminKeyInput.addEventListener("input", () => {
+    localStorage.setItem("GS_ADMIN_KEY", adminKeyInput.value.trim());
+  });
+}
+
 async function fileToBase64(file) {
   const buf = await file.arrayBuffer();
   const bytes = new Uint8Array(buf);
