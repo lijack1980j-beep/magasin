@@ -196,7 +196,7 @@ document.getElementById("saveProjectBtn")?.addEventListener("click", async () =>
   };
 
   if (f.file) {
-    if (f.file.size > 4 * 1024 * 1024) return alert("Image too big (max ~4MB).");
+    if (f.file.size > 10 * 1024 * 1024) return alert("Image too big (max ~10MB).");
     showStatus("Reading image...");
     payload.image_base64 = await fileToBase64(f.file);
     payload.image_mime = f.file.type || "image/png";
