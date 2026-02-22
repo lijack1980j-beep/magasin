@@ -281,6 +281,20 @@ async function loadProjects() {
   if (statusEl) statusEl.textContent = state.projects.length ? "" : "No projects found (Supabase + localStorage empty).";
   render();
 }
+async function loadProjects() {
+  const params = new URLSearchParams(window.location.search);
+  const cat = params.get("cat") || "";
+
+  const res = await fetch(`/api/projects${cat ? `?cat=${encodeURIComponent(cat)}` : ""}`, { cache: "no-store" });
+  const json = await res.json();
+
+  if (!res.ok || !json.ok) {
+    document.getElementById("galleryStatus").textContent = "Error: " + (json.error || "unknown");
+    return;
+  }
+
+  // render json.projects ...
+}
 
 
 
