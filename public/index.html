@@ -31,9 +31,18 @@
   <section class="hero hero-video" id="home">
 
   <!-- VIDEO BACKGROUND -->
-  <video class="hero-bg-video" autoplay muted loop playsinline preload="metadata">
-    <source src="videos/gemini_generated_video_64e49a1f.mp4" type="video/mp4">
-  </video>
+ <video class="hero-bg-video"
+  autoplay
+  muted
+  loop
+  playsinline
+  preload="metadata"
+  poster="/images/hero-image.png">
+
+  <source src="https://ntupihuarkcwzkpccldk.supabase.co/storage/v1/object/public/project-images/videos/gemini_generated_video_64e49a1f.mp4"
+          type="video/mp4">
+
+</video>
 
   <!-- DARK SHADE (to make text readable) -->
   <div class="hero-shade" aria-hidden="true"></div>
@@ -241,9 +250,30 @@ document.getElementById("contactForm").addEventListener("submit", async (e) => {
 </script>
 
   <script src="/services-loader.js" defer></script>
+
+  <script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+const supabase = createClient(
+  "https://ntupihuarkcwzkpccldk.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50dXBpaHVhcmtjd3prcGNjbGRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwNjMzOTksImV4cCI6MjA4NTYzOTM5OX0.06aW6X0Azpj3iXyCKOnJEWnE5R19WE5awc6u0iXeeSU"
+);
+
+const { data } = await supabase
+  .from("site_settings")
+  .select("hero_video_url")
+  .eq("id", "main")
+  .single();
+
+if (data?.hero_video_url) {
+  document.querySelector(".hero-bg-video source").src = data.hero_video_url;
+  document.querySelector(".hero-bg-video").load();
+}
+</script>
   
 </body>
 </html>
+
 
 
 
