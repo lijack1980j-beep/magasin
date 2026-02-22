@@ -14,7 +14,7 @@ function requireAdmin(req, res) {
     return true;
   }
   if (!key || key !== process.env.ADMIN_API_KEY) {
-    res.status(401).json({ ok: false, error: "Unauthorized (wrong ADMIN_API_KEY)" });
+    res.status(401).json({ ok: false, error: "Unauthorized" });
     return true;
   }
   return false;
@@ -36,7 +36,7 @@ module.exports = async (req, res) => {
   try {
     if (requireAdmin(req, res)) return;
 
-    // LIST (optional)
+    // LIST
     if (req.method === "GET") {
       const { data, error } = await supabase
         .from("projects")
@@ -49,40 +49,65 @@ module.exports = async (req, res) => {
       return res.status(200).json({ ok: true, projects: data || [] });
     }
 
-    // CREATE
-    if (req.method === "POST") {
-      const body = safeJson(req.body);
+    const body = safeJson(req.body);
 
-      const title = String(body.title || "").trim();
-      if (!title) return res.status(400).json({ ok: false, error: "title is required" });
+    // DELETE
+    if (req.method === "DELETE") {
+      const id = body.id || req.query?.id;
+      if (!id) return res.status(400).json({ ok: false, error: "Missing id" });
 
-      const category = String(body.category || "other").toLowerCase().trim();
-      const description = String(body.description || "").trim();
-      const live_url = body.live_url ? String(body.live_url).trim() : null;
-      const repo_url = body.repo_url ? String(body.repo_url).trim() : null;
-      const featured = !!body.featured;
-      const sort_order = Number(body.sort_order || 0);
+      const { error } = await supabase.from("projects").delete().eq("id", id);
+      if (error) return res.status(500).json({ ok: false, error: error.message });
 
-      const tags = Array.isArray(body.tags)
-        ? body.tags.map(t => String(t).trim()).filter(Boolean)
-        : String(body.tags || "")
-            .split(",")
-            .map(t => t.trim())
-            .filter(Boolean);
+      return res.status(200).json({ ok: true });
+    }
 
-      // image: either URL or upload base64
-      let cover_image_url = body.cover_image_url ? String(body.cover_image_url).trim() : null;
+    // CREATE / UPDATE (POST/PUT)
+    if (req.method === "POST" || req.method === "PUT") {
+      const {
+        id,
+        title,
+        description,
+        category,
+        tags,
+        live_url,
+        repo_url,
+        featured,
+        sort_order,
+        cover_image_url,
+        image_base64,
+        image_mime,
+        image_filename
+      } = body;
 
-      if (body.image_base64 && body.image_mime) {
-        const mime = String(body.image_mime);
+      const cleanTitle = String(title || "").trim();
+      if (!cleanTitle) return res.status(400).json({ ok: false, error: "Title is required" });
+
+      const payload = {
+        title: cleanTitle,
+        description: String(description || "").trim(),
+        category: String(category || "other").toLowerCase().trim(),
+        tags: Array.isArray(tags)
+          ? tags.map(t => String(t).trim()).filter(Boolean)
+          : String(tags || "").split(",").map(t => t.trim()).filter(Boolean),
+        live_url: live_url ? String(live_url).trim() : null,
+        repo_url: repo_url ? String(repo_url).trim() : null,
+        featured: !!featured,
+        sort_order: Number(sort_order || 0),
+        cover_image_url: cover_image_url ? String(cover_image_url).trim() : null,
+      };
+
+      // Upload if provided
+      if (image_base64 && image_mime) {
+        const mime = String(image_mime);
         const ext =
           mime.includes("png") ? "png" :
           mime.includes("jpeg") ? "jpg" :
           mime.includes("webp") ? "webp" : "png";
 
-        const filename = safeFileName(body.image_filename || `cover.${ext}`);
+        const filename = safeFileName(image_filename || `cover.${ext}`);
         const path = `projects/${Date.now()}-${filename}`;
-        const buffer = Buffer.from(String(body.image_base64), "base64");
+        const buffer = Buffer.from(String(image_base64), "base64");
 
         const { error: upErr } = await supabase.storage
           .from(BUCKET)
@@ -91,27 +116,32 @@ module.exports = async (req, res) => {
         if (upErr) return res.status(500).json({ ok: false, error: "Upload failed: " + upErr.message });
 
         const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
-        cover_image_url = pub.publicUrl;
+        payload.cover_image_url = pub.publicUrl;
       }
 
+      // UPDATE
+      if (req.method === "PUT") {
+        if (!id) return res.status(400).json({ ok: false, error: "Missing id for update" });
+
+        const { data, error } = await supabase
+          .from("projects")
+          .update(payload)
+          .eq("id", id)
+          .select()
+          .single();
+
+        if (error) return res.status(500).json({ ok: false, error: error.message });
+        return res.status(200).json({ ok: true, project: data });
+      }
+
+      // CREATE
       const { data, error } = await supabase
         .from("projects")
-        .insert({
-          title,
-          description,
-          category,
-          tags,
-          live_url,
-          repo_url,
-          featured,
-          sort_order,
-          cover_image_url,
-        })
+        .insert(payload)
         .select()
         .single();
 
       if (error) return res.status(500).json({ ok: false, error: error.message });
-
       return res.status(200).json({ ok: true, project: data });
     }
 
