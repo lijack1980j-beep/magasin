@@ -182,26 +182,22 @@ document.getElementById("saveProjectBtn")?.addEventListener("click", async () =>
   const f = readForm();
   if (!f.title) return alert("Title is required.");
 
-  const payload = {
-    id: editingId || undefined,
-    title: f.title,
-    category: f.category,
-    description: f.description,
-    tags: f.tags,
-    live_url: f.live_url || null,
-    repo_url: f.repo_url || null,
-    featured: f.featured,
-    sort_order: f.sort_order,
-    cover_image_url: f.cover_image_url,
-  };
+ const payload = {
+  id: editingId || undefined,
+  title: f.title,
+  category: f.category,
+  description: f.description,
+  tags: f.tags,
+  live_url: f.live_url || null,
+  repo_url: f.repo_url || null,
+  featured: f.featured,
+  sort_order: f.sort_order,
+  cover_image_url: f.cover_image_url, // ✅ paste URL here
+};
 
-  if (f.file) {
-    if (f.file.size > 10 * 1024 * 1024) return alert("Image too big (max ~10MB).");
-    showStatus("Reading image...");
-    payload.image_base64 = await fileToBase64(f.file);
-    payload.image_mime = f.file.type || "image/png";
-    payload.image_filename = f.file.name || "cover.png";
-  }
+if (f.file) {
+  return alert("Upload disabled (Vercel 413). Please use 'OR image URL' instead.");
+}
 
   showStatus(editingId ? "Updating..." : "Saving...");
 
