@@ -28,20 +28,25 @@
     </div>
   </header>
 
-  <section class="hero" id="home">
-    <div class="hero-bg" aria-hidden="true"></div>
-    <div class="hero-shade" aria-hidden="true"></div>
+  <section class="hero hero-video" id="home">
 
-    <div class="hero-content container">
-      <h1 class="hero-title" data-text="GLITCH SIGNAL">GLITCH SIGNAL</h1>
-      <p class="tagline">Designing digital & physical spaces with purpose</p>
-      <a href="#about" class="cta-button">Discover more
-        <div src ="/images/hero-image.png" alt="Hero image" class="cta-image">
-          
-        </div>
-      </a>
-    </div>
-  </section>
+  <!-- VIDEO BACKGROUND -->
+  <video class="hero-bg-video" autoplay muted loop playsinline preload="metadata">
+    <source src="videos/gemini_generated_video_64e49a1f.mp4" type="video/mp4">
+  </video>
+
+  <!-- DARK SHADE (to make text readable) -->
+  <div class="hero-shade" aria-hidden="true"></div>
+
+  <!-- CONTENT -->
+  <div class="hero-content container">
+    <h1 class="hero-title" data-text="GLITCH SIGNAL">GLITCH SIGNAL</h1>
+    <p class="tagline">Designing digital &amp; physical spaces with purpose</p>
+
+    <a href="#about" class="cta-button">Discover more</a>
+  </div>
+
+</section>
 
 
   <section id="about" class="about container">
@@ -239,6 +244,7 @@ document.getElementById("contactForm").addEventListener("submit", async (e) => {
   
 </body>
 </html>
+
 
 
 
