@@ -130,3 +130,29 @@ function renderStoreProducts(options) {
     });
   });
 }
+
+// ✅ Auto-run based on page
+window.addEventListener("DOMContentLoaded", () => {
+  // Detect which store page we are on by URL
+  const path = (location.pathname || "").toLowerCase();
+
+  if (path.includes("ui-ux-store")) {
+    renderStoreProducts({ category: "uiux", gridId: "productsGrid" });
+  } else if (path.includes("interior")) {
+    renderStoreProducts({ category: "interior", gridId: "productsGrid" });
+  } else if (path.includes("exterior")) {
+    renderStoreProducts({ category: "exterior", gridId: "productsGrid" });
+  } else {
+    // fallback: if you want it to run on any page that has productsGrid
+    renderStoreProducts({ category: "uiux", gridId: "productsGrid" });
+  }
+});
+
+// Refresh list when you come back to the tab
+window.addEventListener("focus", () => {
+  const path = (location.pathname || "").toLowerCase();
+  if (path.includes("ui-ux-store")) renderStoreProducts({ category: "uiux", gridId: "productsGrid" });
+  if (path.includes("interior")) renderStoreProducts({ category: "interior", gridId: "productsGrid" });
+  if (path.includes("exterior")) renderStoreProducts({ category: "exterior", gridId: "productsGrid" });
+});
+
