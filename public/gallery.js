@@ -220,8 +220,16 @@ async function loadProjects() {
     : `/api/projects`;
 
   try {
-    const res = await fetch(url, { cache: "no-store" });
-    const json = await res.json();
+   const res = await fetch("/api/projects", { cache: "no-store" });
+
+const ct = res.headers.get("content-type") || "";
+if (!ct.includes("application/json")) {
+  const text = await res.text();
+  throw new Error(`API returned ${res.status} (${ct}). First chars: ` + text.slice(0, 80));
+}
+
+const json = await res.json();
+if (!res.ok || !json.ok) throw new Error(json.error || "Failed to load");
 
     if (!res.ok || !json.ok) throw new Error(json.error || "Failed to load");
 
