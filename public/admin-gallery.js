@@ -205,7 +205,13 @@ document.getElementById("saveProjectBtn")?.addEventListener("click", async () =>
 
   showStatus(editingId ? "Updating..." : "Saving...");
 
-  const text = await res.text();     // ✅ read raw response first
+ const res = await fetch("/api/admin-project", {
+  method: editingId ? "PUT" : "POST",
+  headers: { "Content-Type": "application/json", "x-admin-key": key },
+  body: JSON.stringify(payload),
+});
+
+const text = await res.text();
 let json = null;
 try { json = JSON.parse(text); } catch {}
 
@@ -213,6 +219,10 @@ if (!res.ok || !json?.ok) {
   const msg = json?.error || text.slice(0, 180) || "unknown";
   return showStatus(`Save failed (HTTP ${res.status}): ${msg}`);
 }
+
+showStatus(editingId ? "Updated ✅" : "Saved ✅");
+resetForm();
+fetchProjects();
   
   showStatus(editingId ? "Updated ✅" : "Saved ✅");
   resetForm();
