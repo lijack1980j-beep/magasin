@@ -1,58 +1,33 @@
-// admin-gallery.js (FULL)
-// Requires /api/admin-project that supports GET/POST/PUT/DELETE with x-admin-key
+// admin-gallery.js (Gallery Manager tab logic)
+// Requires /api/admin-project with GET/POST/PUT/DELETE protected by x-admin-key
 
-const LOGIN_KEY = "GS_ADMIN_KEY"; // sessionStorage key
 let editingId = null;
-
-const loginSection = document.getElementById("loginSection");
-const managerSection = document.getElementById("managerSection");
-
-const loginBtn = document.getElementById("loginBtn");
-const logoutBtn = document.getElementById("logoutBtn");
-const cancelEditBtn = document.getElementById("cancelEditBtn");
-
-const adminKeyInput = document.getElementById("adminKeyInput");
-const loginStatus = document.getElementById("loginStatus");
 
 const statusEl = document.getElementById("adminStatus");
 const listEl = document.getElementById("projectsList");
+const adminKeyInput = document.getElementById("adminKey");
+const cancelEditBtn = document.getElementById("cancelEditBtn");
 
-function show(el) { el?.classList.remove("hidden"); }
-function hide(el) { el?.classList.add("hidden"); }
-
-function setLoginStatus(msg) {
-  if (!loginStatus) return;
-  loginStatus.textContent = msg || "";
-  msg ? show(loginStatus) : hide(loginStatus);
-}
-
-function setStatus(msg) {
+function showStatus(msg) {
   if (!statusEl) return;
   statusEl.textContent = msg || "";
-  msg ? show(statusEl) : hide(statusEl);
+  if (!msg) statusEl.classList.add("hidden");
+  else statusEl.classList.remove("hidden");
 }
 
 function getAdminKey() {
-  return (sessionStorage.getItem(LOGIN_KEY) || "").trim();
-}
-function setAdminKey(key) {
-  sessionStorage.setItem(LOGIN_KEY, String(key || "").trim());
-}
-function clearAdminKey() {
-  sessionStorage.removeItem(LOGIN_KEY);
-}
+  const saved = sessionStorage.getItem("GS_ADMIN_KEY");
+  if (adminKeyInput && saved && !adminKeyInput.value) adminKeyInput.value = saved;
 
-// Auto logout when leaving page (close/refresh/navigate away)
-window.addEventListener("beforeunload", () => {
-  clearAdminKey();
-});
+  const k = (adminKeyInput?.value || "").trim();
+  if (k) sessionStorage.setItem("GS_ADMIN_KEY", k);
+  return k;
+}
 
 function esc(s) {
   return String(s ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
+    .replaceAll("&", "&amp;").replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;").replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
 
@@ -95,7 +70,7 @@ function fillForm(p) {
 function resetForm() {
   editingId = null;
   document.getElementById("saveProjectBtn").textContent = "Save to Gallery";
-  setStatus("");
+  showStatus("");
   document.getElementById("pTitle").value = "";
   document.getElementById("pDescription").value = "";
   document.getElementById("pTags").value = "";
@@ -107,48 +82,27 @@ function resetForm() {
   document.getElementById("pFile").value = "";
 }
 
-function showManager() {
-  hide(loginSection);
-  show(managerSection);
-}
-function showLogin() {
-  show(loginSection);
-  hide(managerSection);
-  resetForm();
-}
+async function fetchProjects() {
+  const key = getAdminKey();
+  if (!key) return showStatus("Enter Admin API Key first.");
 
-async function safeJson(res) {
+  showStatus("Loading projects...");
+  const res = await fetch("/api/admin-project", {
+    headers: { "x-admin-key": key },
+    cache: "no-store",
+  });
+
   const ct = res.headers.get("content-type") || "";
   if (!ct.includes("application/json")) {
     const text = await res.text();
-    throw new Error(`API returned ${res.status} (${ct}). First chars: ${text.slice(0, 80)}`);
+    return showStatus(`API returned ${res.status}. ${text.slice(0,80)}`);
   }
-  return await res.json();
-}
 
-async function fetchProjects() {
-  const adminKey = getAdminKey();
-  if (!adminKey) return;
+  const json = await res.json();
+  if (!res.ok || !json.ok) return showStatus("Load failed: " + (json.error || "unknown"));
 
-  setStatus("Loading projects...");
-  try {
-    const res = await fetch("/api/admin-project", {
-      headers: { "x-admin-key": adminKey },
-      cache: "no-store",
-    });
-
-    const json = await safeJson(res);
-    if (!res.ok || !json.ok) {
-      setStatus("Load failed: " + (json.error || "unknown"));
-      return;
-    }
-
-    setStatus("");
-    renderList(json.projects || []);
-  } catch (e) {
-    console.error(e);
-    setStatus("Load failed: " + e.message);
-  }
+  showStatus("");
+  renderList(json.projects || []);
 }
 
 function renderList(items) {
@@ -160,25 +114,28 @@ function renderList(items) {
   }
 
   listEl.innerHTML = items.map(p => `
-    <div class="p-item">
-      <div class="p-thumb">
+    <div style="display:grid;grid-template-columns:120px 1fr auto;gap:12px;align-items:center;background:#131313;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px;">
+      <div style="width:120px;height:80px;overflow:hidden;border-radius:10px;background:#0f0f0f;">
         <img src="${esc(p.cover_image_url || "/images/hero-image.png")}"
+             style="width:100%;height:100%;object-fit:cover;display:block;"
              onerror="this.onerror=null;this.src='/images/hero-image.png';" />
       </div>
 
       <div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
           <strong>${esc(p.title || "Untitled")}</strong>
-          <span class="pill">${esc(p.category || "other")}</span>
-          ${p.featured ? `<span class="pill" style="border-color:rgba(255,0,80,.35);">★ featured</span>` : ""}
-          <span class="mini">Sort: ${Number(p.sort_order || 0)}</span>
+          <span style="color:#00bcd4;font-size:12px;border:1px solid rgba(255,255,255,.12);padding:2px 8px;border-radius:999px;">
+            ${esc(p.category || "other")}
+          </span>
+          ${p.featured ? `<span style="color:#ff0080;font-size:12px;">★ featured</span>` : ""}
+          <span style="color:#888;font-size:12px;">Sort: ${Number(p.sort_order || 0)}</span>
         </div>
-        <div class="mini" style="margin-top:6px;">${esc(p.description || "")}</div>
+        <div style="color:#aaa;font-size:13px;margin-top:4px;">${esc(p.description || "")}</div>
       </div>
 
       <div style="display:flex;gap:10px;align-items:center;">
-        <button class="btn" data-edit="${p.id}" type="button">Edit</button>
-        <button class="btn danger" data-del="${p.id}" type="button">Delete</button>
+        <button data-edit="${p.id}" class="btn" type="button">Edit</button>
+        <button data-del="${p.id}" class="btn danger" type="button">Delete</button>
       </div>
     </div>
   `).join("");
@@ -197,38 +154,30 @@ function renderList(items) {
 
   listEl.querySelectorAll("button[data-del]").forEach(btn => {
     btn.addEventListener("click", async () => {
-      const adminKey = getAdminKey();
+      const key = getAdminKey();
       const id = btn.getAttribute("data-del");
       if (!id) return;
       if (!confirm("Delete this project?")) return;
 
-      setStatus("Deleting...");
-      try {
-        const res = await fetch("/api/admin-project", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
-          body: JSON.stringify({ id }),
-        });
+      showStatus("Deleting...");
+      const res = await fetch("/api/admin-project", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json", "x-admin-key": key },
+        body: JSON.stringify({ id }),
+      });
 
-        const json = await safeJson(res);
-        if (!res.ok || !json.ok) {
-          setStatus("Delete failed: " + (json.error || "unknown"));
-          return;
-        }
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.ok) return showStatus("Delete failed: " + (json.error || "unknown"));
 
-        setStatus("Deleted ✅");
-        fetchProjects();
-      } catch (e) {
-        console.error(e);
-        setStatus("Delete failed: " + e.message);
-      }
+      showStatus("Deleted ✅");
+      fetchProjects();
     });
   });
 }
 
 document.getElementById("saveProjectBtn")?.addEventListener("click", async () => {
-  const adminKey = getAdminKey();
-  if (!adminKey) return alert("Please login first.");
+  const key = getAdminKey();
+  if (!key) return alert("Enter Admin API Key first.");
 
   const f = readForm();
   if (!f.title) return alert("Title is required.");
@@ -248,87 +197,31 @@ document.getElementById("saveProjectBtn")?.addEventListener("click", async () =>
 
   if (f.file) {
     if (f.file.size > 4 * 1024 * 1024) return alert("Image too big (max ~4MB).");
-    setStatus("Reading image...");
+    showStatus("Reading image...");
     payload.image_base64 = await fileToBase64(f.file);
     payload.image_mime = f.file.type || "image/png";
     payload.image_filename = f.file.name || "cover.png";
   }
 
-  setStatus(editingId ? "Updating..." : "Saving...");
+  showStatus(editingId ? "Updating..." : "Saving...");
 
-  try {
-    const res = await fetch("/api/admin-project", {
-      method: editingId ? "PUT" : "POST",
-      headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
-      body: JSON.stringify(payload),
-    });
+  const res = await fetch("/api/admin-project", {
+    method: editingId ? "PUT" : "POST",
+    headers: { "Content-Type": "application/json", "x-admin-key": key },
+    body: JSON.stringify(payload),
+  });
 
-    const json = await safeJson(res);
-    if (!res.ok || !json.ok) {
-      setStatus("Save failed: " + (json.error || "unknown"));
-      return;
-    }
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.ok) return showStatus("Save failed: " + (json.error || "unknown"));
 
-    setStatus(editingId ? "Updated ✅" : "Saved ✅");
-    resetForm();
-    fetchProjects();
-  } catch (e) {
-    console.error(e);
-    setStatus("Save failed: " + e.message);
-  }
-});
-
-cancelEditBtn?.addEventListener("click", () => {
+  showStatus(editingId ? "Updated ✅" : "Saved ✅");
   resetForm();
+  fetchProjects();
 });
 
-// LOGIN
-loginBtn?.addEventListener("click", async () => {
-  const key = (adminKeyInput?.value || "").trim();
-  if (!key) return setLoginStatus("Enter ADMIN_API_KEY.");
+cancelEditBtn?.addEventListener("click", resetForm);
 
-  setLoginStatus("Checking...");
-
-  try {
-    const res = await fetch("/api/admin-project", {
-      headers: { "x-admin-key": key },
-      cache: "no-store",
-    });
-
-    const json = await safeJson(res);
-    if (!res.ok || !json.ok) {
-      clearAdminKey();
-      setLoginStatus("Login failed: " + (json.error || `HTTP ${res.status}`));
-      showLogin();
-      return;
-    }
-
-    setAdminKey(key);
-    setLoginStatus("");
-    showManager();
-    fetchProjects();
-  } catch (e) {
-    console.error(e);
-    clearAdminKey();
-    setLoginStatus("Login failed: " + e.message);
-    showLogin();
-  }
-});
-
-// LOGOUT
-logoutBtn?.addEventListener("click", () => {
-  clearAdminKey();
-  showLogin();
-  setLoginStatus("Logged out ✅");
-  if (adminKeyInput) adminKeyInput.value = "";
-});
-
-// On load
-window.addEventListener("DOMContentLoaded", () => {
-  if (getAdminKey()) {
-    showManager();
-    fetchProjects();
-  } else {
-    showLogin();
-  }
+// When Gallery tab is opened
+window.addEventListener("GS_OPEN_GALLERY_TAB", () => {
+  if (getAdminKey()) fetchProjects();
 });
