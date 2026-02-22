@@ -6,16 +6,25 @@ const supabase = createClient(
 );
 
 module.exports = async (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+
   try {
-    const { data, error } = await supabase
+    const cat = (req.query.cat || "").toString().toLowerCase().trim(); // optional filter
+    const featured = (req.query.featured || "").toString() === "1";
+
+    let q = supabase
       .from("projects")
       .select("id,title,description,category,tags,cover_image_url,repo_url,live_url,featured,sort_order,created_at")
       .order("featured", { ascending: false })
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false });
 
-    if (error) return res.status(500).json({ ok: false, error: error.message });
+    if (featured) q = q.eq("featured", true);
+    if (cat) q = q.eq("category", cat);
 
+    const { data, error } = await q;
+
+    if (error) return res.status(500).json({ ok: false, error: error.message });
     return res.status(200).json({ ok: true, projects: data || [] });
   } catch (e) {
     return res.status(500).json({ ok: false, error: e.message });
