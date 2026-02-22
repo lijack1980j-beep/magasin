@@ -1,22 +1,49 @@
+// admin-gallery.js (FULL)
+
+const LOGIN_KEY = "GS_ADMIN_KEY"; // session-only
+let editingId = null;
+
+const managerSection = document.getElementById("managerSection");
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const loginStatus = document.getElementById("loginStatus");
+const adminKeyInput = document.getElementById("adminKey");
+
 const statusEl = document.getElementById("adminStatus");
 const listEl = document.getElementById("projectsList");
 
-let editingId = null;
+function setLoginStatus(msg) {
+  if (loginStatus) loginStatus.textContent = msg || "";
+}
 
 function setStatus(msg) {
   if (statusEl) statusEl.textContent = msg || "";
 }
 
-function getAdminKey() {
-  const input = document.getElementById("adminKey");
-  if (!input) return "";
-  const saved = localStorage.getItem("GS_ADMIN_KEY");
-  if (saved && !input.value) input.value = saved;
-
-  const k = (input.value || "").trim();
-  if (k) localStorage.setItem("GS_ADMIN_KEY", k);
-  return k;
+function showManager() {
+  if (managerSection) managerSection.style.display = "block";
 }
+
+function hideManager() {
+  if (managerSection) managerSection.style.display = "none";
+}
+
+function getAdminKey() {
+  return (sessionStorage.getItem(LOGIN_KEY) || "").trim();
+}
+
+function setAdminKey(key) {
+  sessionStorage.setItem(LOGIN_KEY, key.trim());
+}
+
+function clearAdminKey() {
+  sessionStorage.removeItem(LOGIN_KEY);
+}
+
+// Auto logout when leaving page/tab
+window.addEventListener("beforeunload", () => {
+  clearAdminKey();
+});
 
 function esc(s) {
   return String(s ?? "")
@@ -81,7 +108,7 @@ function resetForm() {
 async function fetchProjects() {
   const adminKey = getAdminKey();
   if (!adminKey) {
-    setStatus("Enter Admin API Key to load projects.");
+    setStatus("Please login first.");
     return;
   }
 
@@ -158,10 +185,7 @@ function renderList(items) {
       setStatus("Deleting...");
       const res = await fetch("/api/admin-project", {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          "x-admin-key": adminKey,
-        },
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
         body: JSON.stringify({ id }),
       });
 
@@ -179,7 +203,7 @@ function renderList(items) {
 
 document.getElementById("saveProjectBtn")?.addEventListener("click", async () => {
   const adminKey = getAdminKey();
-  if (!adminKey) return alert("Enter Admin API Key first.");
+  if (!adminKey) return alert("Please login first.");
 
   const f = readForm();
   if (!f.title) return alert("Title is required.");
@@ -209,10 +233,7 @@ document.getElementById("saveProjectBtn")?.addEventListener("click", async () =>
 
   const res = await fetch("/api/admin-project", {
     method: editingId ? "PUT" : "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-admin-key": adminKey,
-    },
+    headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
     body: JSON.stringify(payload),
   });
 
@@ -227,11 +248,45 @@ document.getElementById("saveProjectBtn")?.addEventListener("click", async () =>
   fetchProjects();
 });
 
-// Load list when key entered/changed
-document.getElementById("adminKey")?.addEventListener("change", fetchProjects);
+// Login
+loginBtn?.addEventListener("click", async () => {
+  const key = (adminKeyInput?.value || "").trim();
+  if (!key) return setLoginStatus("Enter Admin API Key.");
 
-// Try auto-load on page load if key saved
+  setLoginStatus("Checking...");
+  const res = await fetch("/api/admin-project", {
+    headers: { "x-admin-key": key },
+    cache: "no-store"
+  });
+
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.ok) {
+    setLoginStatus("Login failed: " + (json.error || `HTTP ${res.status}`));
+    clearAdminKey();
+    hideManager();
+    return;
+  }
+
+  setAdminKey(key);
+  setLoginStatus("Login success ✅");
+  showManager();
+  fetchProjects();
+});
+
+// Logout
+logoutBtn?.addEventListener("click", () => {
+  clearAdminKey();
+  hideManager();
+  setLoginStatus("Logged out ✅");
+  if (adminKeyInput) adminKeyInput.value = "";
+});
+
+// On load: show manager only if session key exists
 window.addEventListener("DOMContentLoaded", () => {
-  const k = getAdminKey();
-  if (k) fetchProjects();
+  if (getAdminKey()) {
+    showManager();
+    fetchProjects();
+  } else {
+    hideManager();
+  }
 });
