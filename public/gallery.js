@@ -1,9 +1,12 @@
-import { supabase } from "/supabaseClient.js";
+// gallery.js (clean + stable)
+// Requires in gallery.html:
+// <div id="galleryStatus"></div>
+// <div id="galleryRoot"></div>
+// Optional: #filters, #searchInput, #sortSelect
 
 const root = document.getElementById("galleryRoot");
 const statusEl = document.getElementById("galleryStatus");
 
-// Optional UI elements (may be missing depending on your gallery.html)
 const filtersEl = document.getElementById("filters");
 const searchInput = document.getElementById("searchInput");
 const sortSelect = document.getElementById("sortSelect");
@@ -28,11 +31,6 @@ const state = {
   q: "",
   sort: "new",
 };
-// ✅ Read category from URL: /gallery.html?cat=uiux
-const params = new URLSearchParams(window.location.search);
-const urlCat = params.get("cat");
-if (urlCat) state.category = normalizeCategory(urlCat);
-
 
 function escapeHtml(str) {
   return String(str ?? "")
@@ -52,61 +50,38 @@ function normalizeCategory(c) {
   if (["uiux", "interior", "exterior", "other"].includes(s)) return s;
   return "other";
 }
-const params = new URLSearchParams(window.location.search);
-const urlCat = params.get("cat");
-if (urlCat) state.category = normalizeCategory(urlCat);
 
 function getDefaultImage(cat) {
   return CATEGORY_DEFAULT_IMAGE[cat] || CATEGORY_DEFAULT_IMAGE.other;
 }
 
-async function loadProjects() {
-  statusEl.textContent = "Loading projects...";
-  try {
-    const res = await fetch("/api/projects");
-    const json = await res.json();
-
-    if (!res.ok || !json.ok) throw new Error(json.error || "Failed to load");
-
-    state.projects = (json.projects || []).map((p) => ({
-      ...p,
-      category: normalizeCategory(p.category),
-      tags: Array.isArray(p.tags) ? p.tags : [],
-      stars_count: Number(p.stars_count || 0),
-    }));
-
-    statusEl.textContent = state.projects.length ? "" : "No projects found yet.";
-    render();
-  } catch (e) {
-    statusEl.textContent = "Gallery error: " + e.message;
-    console.error(e);
-  }
+// ✅ read category from URL: /gallery.html?cat=uiux
+{
+  const params = new URLSearchParams(window.location.search);
+  const urlCat = params.get("cat");
+  if (urlCat) state.category = normalizeCategory(urlCat);
 }
 
 function applyFilters(list) {
   let out = [...list];
 
-  // search
   const q = state.q.toLowerCase().trim();
   if (q) {
     out = out.filter((p) => {
-      const hay = `${p.title} ${p.description} ${(p.tags || []).join(" ")} ${p.repo_full_name || ""}`.toLowerCase();
+      const hay = `${p.title} ${p.description} ${(p.tags || []).join(" ")}`.toLowerCase();
       return hay.includes(q);
     });
   }
 
-  // category
   if (state.category !== "all") {
     out = out.filter((p) => normalizeCategory(p.category) === state.category);
   }
 
-  // sort
   if (state.sort === "stars") {
     out.sort((a, b) => (b.stars_count || 0) - (a.stars_count || 0));
   } else if (state.sort === "az") {
     out.sort((a, b) => String(a.title).localeCompare(String(b.title)));
   } else {
-    // newest
     out.sort((a, b) => {
       const da = a.created_at ? new Date(a.created_at).getTime() : 0;
       const db = b.created_at ? new Date(b.created_at).getTime() : 0;
@@ -115,16 +90,6 @@ function applyFilters(list) {
   }
 
   return out;
-}
-
-// counts ignore category selection but include search
-function applyFiltersForCounts(list) {
-  const q = state.q.toLowerCase().trim();
-  if (!q) return list;
-  return list.filter((p) => {
-    const hay = `${p.title} ${p.description} ${(p.tags || []).join(" ")} ${p.repo_full_name || ""}`.toLowerCase();
-    return hay.includes(q);
-  });
 }
 
 function countByCategory(list) {
@@ -137,9 +102,16 @@ function countByCategory(list) {
 }
 
 function renderFilters() {
-  if (!filtersEl) return; // ✅ no crash if missing
+  if (!filtersEl) return;
 
-  const counts = countByCategory(applyFiltersForCounts(state.projects));
+  // counts should ignore current category filter but keep search text
+  const q = state.q.toLowerCase().trim();
+  const base = q
+    ? state.projects.filter(p => (`${p.title} ${p.description} ${(p.tags||[]).join(" ")}`).toLowerCase().includes(q))
+    : state.projects;
+
+  const counts = countByCategory(base);
+
   const chips = [
     ["all", `All (${counts.all})`],
     ["uiux", `UI/UX (${counts.uiux})`],
@@ -148,12 +120,10 @@ function renderFilters() {
     ["other", `Other (${counts.other})`],
   ];
 
-  filtersEl.innerHTML = chips
-    .map(([key, label]) => {
-      const active = state.category === key ? "is-active" : "";
-      return `<button class="filter-chip ${active}" data-cat="${key}" type="button">${escapeHtml(label)}</button>`;
-    })
-    .join("");
+  filtersEl.innerHTML = chips.map(([key, label]) => {
+    const active = state.category === key ? "is-active" : "";
+    return `<button class="filter-chip ${active}" data-cat="${key}" type="button">${escapeHtml(label)}</button>`;
+  }).join("");
 
   filtersEl.querySelectorAll("button[data-cat]").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -166,21 +136,16 @@ function renderFilters() {
 function projectCard(p) {
   const cat = normalizeCategory(p.category);
   const img = p.cover_image_url || getDefaultImage(cat);
-  const tags = (p.tags || []).slice(0, 6);
+  const tags = Array.isArray(p.tags) ? p.tags.slice(0, 6) : [];
 
-  const repo = p.repo_url
-    ? `<a class="mini-link" href="${escapeHtml(p.repo_url)}" target="_blank" rel="noopener">GitHub</a>`
-    : "";
-
-  const live = p.live_url
-    ? `<a class="mini-link" href="${escapeHtml(p.live_url)}" target="_blank" rel="noopener">Live</a>`
-    : "";
+  const repo = p.repo_url ? `<a class="mini-link" href="${escapeHtml(p.repo_url)}" target="_blank" rel="noopener">GitHub</a>` : "";
+  const live = p.live_url ? `<a class="mini-link" href="${escapeHtml(p.live_url)}" target="_blank" rel="noopener">Live</a>` : "";
 
   return `
     <article class="g-card">
       <div class="g-card-img">
         <img src="${escapeHtml(img)}"
-             alt="${escapeHtml(p.title)}"
+             alt="${escapeHtml(p.title || "Project")}"
              loading="lazy"
              onerror="this.onerror=null;this.src='${getDefaultImage(cat)}';" />
       </div>
@@ -188,7 +153,7 @@ function projectCard(p) {
       <div class="g-card-body">
         <div class="g-card-top">
           <span class="g-badge">${escapeHtml(CATEGORY_LABELS[cat] || "Other")}</span>
-          <span class="g-stars">★ ${Number(p.stars_count || 0)}</span>
+          ${p.featured ? `<span class="g-stars">★ featured</span>` : `<span class="g-stars">★ ${Number(p.stars_count || 0)}</span>`}
         </div>
 
         <h3 class="g-title">${escapeHtml(p.title || "Untitled")}</h3>
@@ -209,36 +174,29 @@ function projectCard(p) {
 
 function renderGrouped(list) {
   const groups = { uiux: [], interior: [], exterior: [], other: [] };
-  for (const p of list) {
-    const c = normalizeCategory(p.category);
-    groups[c].push(p);
-  }
+  for (const p of list) groups[normalizeCategory(p.category)].push(p);
 
   const order = ["uiux", "interior", "exterior", "other"];
 
   root.innerHTML = order
-    .filter((k) => groups[k].length)
-    .map((k) => `
+    .filter(k => groups[k].length)
+    .map(k => `
       <section class="g-section">
         <h2 class="g-section-title">${escapeHtml(CATEGORY_LABELS[k] || "Other")}</h2>
         <div class="g-grid">
           ${groups[k].map(projectCard).join("")}
         </div>
       </section>
-    `)
-    .join("");
+    `).join("");
 
   if (!root.innerHTML.trim()) {
-    root.innerHTML = `<p class="gallery-empty">No projects match your filters.</p>`;
+    root.innerHTML = `<p class="gallery-empty">No projects found.</p>`;
   }
-}
-
-function renderFlat(list) {
-  root.innerHTML = `<div class="g-grid">${list.map(projectCard).join("")}</div>`;
 }
 
 function render() {
   if (!root) return;
+
   renderFilters();
 
   const filtered = applyFilters(state.projects);
@@ -247,65 +205,48 @@ function render() {
     return;
   }
 
-  // If "All" show grouped sections, else show grid
+  // If all categories: grouped sections. Otherwise: flat grid.
   if (state.category === "all") renderGrouped(filtered);
-  else renderFlat(filtered);
+  else root.innerHTML = `<div class="g-grid">${filtered.map(projectCard).join("")}</div>`;
 }
 
 async function loadProjects() {
-  statusEl.textContent = "Loading projects...";
+  if (statusEl) statusEl.textContent = "Loading projects...";
+
+  const params = new URLSearchParams(window.location.search);
+  const cat = params.get("cat");
+  const url = cat
+    ? `/api/projects?cat=${encodeURIComponent(normalizeCategory(cat))}`
+    : `/api/projects`;
+
   try {
-    const res = await fetch("/api/projects");
+    const res = await fetch(url, { cache: "no-store" });
     const json = await res.json();
 
     if (!res.ok || !json.ok) throw new Error(json.error || "Failed to load");
 
-    state.projects = (json.projects || []).map((p) => ({
+    state.projects = (json.projects || []).map(p => ({
       ...p,
       category: normalizeCategory(p.category),
       tags: Array.isArray(p.tags) ? p.tags : [],
       stars_count: Number(p.stars_count || 0),
     }));
 
-    statusEl.textContent = state.projects.length ? "" : "No projects found yet.";
+    if (statusEl) statusEl.textContent = state.projects.length ? "" : "No projects found yet.";
     render();
   } catch (e) {
-    statusEl.textContent = "Gallery error: " + e.message;
     console.error(e);
+    if (statusEl) statusEl.textContent = "Gallery error: " + e.message;
   }
 }
 
-
-  // fallback
-  state.projects = getLocalProjects();
-  if (statusEl) statusEl.textContent = state.projects.length ? "" : "No projects found (Supabase + localStorage empty).";
-  render();
-}
-async function loadProjects() {
-  const params = new URLSearchParams(window.location.search);
-  const cat = params.get("cat") || "";
-
-  const res = await fetch(`/api/projects${cat ? `?cat=${encodeURIComponent(cat)}` : ""}`, { cache: "no-store" });
-  const json = await res.json();
-
-  if (!res.ok || !json.ok) {
-    document.getElementById("galleryStatus").textContent = "Error: " + (json.error || "unknown");
-    return;
-  }
-
-  // render json.projects ...
-}
-
-
-
-// Hook UI only if elements exist ✅
+// Hook UI if present
 if (searchInput) {
   searchInput.addEventListener("input", (e) => {
     state.q = e.target.value || "";
     render();
   });
 }
-
 if (sortSelect) {
   sortSelect.addEventListener("change", (e) => {
     state.sort = e.target.value || "new";
