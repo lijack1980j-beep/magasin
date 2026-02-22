@@ -363,391 +363,365 @@
   <script src="/admin-gallery.js" defer></script>
 
   <!-- Admin Logic (Services + Auth + Tabs) -->
-  <script>
-    // ====== Storage Keys ======
-    const KEY_ADMIN_PASS = "gs_admin_password";
-    const KEY_ADMIN_AUTH = "gs_admin_authed";
-    const KEY_PROJECTS   = "gs_projects";
-    const KEY_CLIENTS    = "gs_clients";
+ <script>
+(() => {
+  // ====== Storage Keys ======
+  const KEY_ADMIN_PASS = "gs_admin_password";
+  const KEY_ADMIN_AUTH = "gs_admin_authed";
+  const KEY_PROJECTS   = "gs_projects";
+  const KEY_CLIENTS    = "gs_clients";
 
-    // ====== Default password (first time only) ======
-    const DEFAULT_PASS = "0000";
+  const DEFAULT_PASS = "0000";
 
-    // ====== Helpers ======
-    const $ = (id) => document.getElementById(id);
+  const byId = (id) => document.getElementById(id);
 
-    function fileToDataUrl(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    }
-
-    function isProbablyTooBigForLocalStorage(dataUrl) {
-      const approxBytes = Math.ceil((dataUrl.length - "data:".length) * 0.75);
-      return approxBytes > 2_000_000;
-    }
-
-    function safeParse(json, fallback){
-      try { return JSON.parse(json); } catch(e) { return fallback; }
-    }
-
-    function getProjects(){
-      return safeParse(localStorage.getItem(KEY_PROJECTS), []);
-    }
-    function setProjects(projects){
-      localStorage.setItem(KEY_PROJECTS, JSON.stringify(projects));
-    }
-
-    function getClients(){
-      return safeParse(localStorage.getItem(KEY_CLIENTS), []);
-    }
-    function setClients(clients){
-      localStorage.setItem(KEY_CLIENTS, JSON.stringify(clients));
-    }
-
-    function categoryLabel(val){
-      if(val === "uiux") return "UI/UX";
-      if(val === "interior") return "Interior";
-      if(val === "exterior") return "Exterior";
-      return val;
-    }
-
-    function showMsg(text){
-      const box = $("form-msg");
-      box.textContent = text;
-      box.classList.remove("hidden");
-      setTimeout(() => box.classList.add("hidden"), 2200);
-    }
-
-    function newId(){
-      return "p_" + Math.random().toString(16).slice(2) + Date.now().toString(16);
-    }
-
-    // ====== Auth ======
-    function ensurePassword(){
-      if(!localStorage.getItem(KEY_ADMIN_PASS)){
-        localStorage.setItem(KEY_ADMIN_PASS, DEFAULT_PASS);
-      }
-    }
-
-    // ✅ session auth + auto logout on leave
-    function isAuthed(){
-      return sessionStorage.getItem(KEY_ADMIN_AUTH) === "true";
-    }
-    function setAuthed(val){
-      sessionStorage.setItem(KEY_ADMIN_AUTH, val ? "true" : "false");
-    }
-    window.addEventListener("beforeunload", () => {
-      setAuthed(false);
-      sessionStorage.removeItem("GS_ADMIN_KEY"); // clears Gallery API key too
+  function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
     });
+  }
 
-    function showLogin(){
-      $("admin-login").classList.remove("hidden");
-      $("admin-dashboard").classList.add("hidden");
-      $("admin-password").value = "";
+  function isProbablyTooBigForLocalStorage(dataUrl) {
+    const approxBytes = Math.ceil((dataUrl.length - "data:".length) * 0.75);
+    return approxBytes > 2_000_000;
+  }
+
+  function safeParse(json, fallback){
+    try { return JSON.parse(json); } catch(e) { return fallback; }
+  }
+
+  function getProjects(){
+    return safeParse(localStorage.getItem(KEY_PROJECTS), []);
+  }
+  function setProjects(projects){
+    localStorage.setItem(KEY_PROJECTS, JSON.stringify(projects));
+  }
+
+  function getClients(){
+    return safeParse(localStorage.getItem(KEY_CLIENTS), []);
+  }
+  function setClients(clients){
+    localStorage.setItem(KEY_CLIENTS, JSON.stringify(clients));
+  }
+
+  function categoryLabel(val){
+    if(val === "uiux") return "UI/UX";
+    if(val === "interior") return "Interior";
+    if(val === "exterior") return "Exterior";
+    return val;
+  }
+
+  function showMsg(text){
+    const box = byId("form-msg");
+    if (!box) return alert(text);
+    box.textContent = text;
+    box.classList.remove("hidden");
+    setTimeout(() => box.classList.add("hidden"), 2200);
+  }
+
+  function newId(){
+    return "p_" + Math.random().toString(16).slice(2) + Date.now().toString(16);
+  }
+
+  // ====== Auth ======
+  function ensurePassword(){
+    if(!localStorage.getItem(KEY_ADMIN_PASS)){
+      localStorage.setItem(KEY_ADMIN_PASS, DEFAULT_PASS);
+    }
+  }
+
+  // ✅ session auth + auto logout on leave
+  function isAuthed(){
+    return sessionStorage.getItem(KEY_ADMIN_AUTH) === "true";
+  }
+  function setAuthed(val){
+    sessionStorage.setItem(KEY_ADMIN_AUTH, val ? "true" : "false");
+  }
+  window.addEventListener("beforeunload", () => {
+    setAuthed(false);
+    sessionStorage.removeItem("GS_ADMIN_KEY");
+  });
+
+  function showLogin(){
+    byId("admin-login")?.classList.remove("hidden");
+    byId("admin-dashboard")?.classList.add("hidden");
+    if (byId("admin-password")) byId("admin-password").value = "";
+  }
+
+  function showDashboard(){
+    byId("admin-login")?.classList.add("hidden");
+    byId("admin-dashboard")?.classList.remove("hidden");
+    renderProjects();
+    renderClients();
+    resetForm();
+    showServicesTab();
+  }
+
+  // ====== Render Projects ======
+  function renderProjects(){
+    const tbody = byId("projects-body");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    const projects = getProjects();
+
+    if(projects.length === 0){
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td colspan="5" class="muted">No projects yet. Add one above.</td>`;
+      tbody.appendChild(tr);
+      return;
     }
 
-    function showDashboard(){
-      $("admin-login").classList.add("hidden");
-      $("admin-dashboard").classList.remove("hidden");
+    projects.forEach(p => {
+      const tr = document.createElement("tr");
+      tr.style.cursor = "pointer";
+      tr.innerHTML = `
+        <td><strong>${escapeHtml(p.title)}</strong></td>
+        <td><span class="pill">${categoryLabel(p.category)}</span></td>
+        <td class="muted">${escapeHtml(p.desc || "")}</td>
+        <td>$${Number(p.price || 0).toFixed(2)}</td>
+        <td class="muted">${escapeHtml(p.image || "")}</td>
+      `;
+      tr.addEventListener("click", () => loadProjectToForm(p.id));
+      tbody.appendChild(tr);
+    });
+  }
+
+  function loadProjectToForm(id){
+    const projects = getProjects();
+    const p = projects.find(x => x.id === id);
+    if(!p) return;
+
+    byId("project-video-url").value = p.videoUrl || "";
+    byId("project-id").value = p.id;
+    byId("project-title").value = p.title || "";
+    byId("project-category").value = p.category || "uiux";
+    byId("project-desc").value = p.desc || "";
+    byId("project-price").value = p.price ?? "";
+    byId("project-image").value = p.image || "";
+
+    byId("delete-project-btn").disabled = false;
+    showMsg("Loaded for editing.");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function resetForm(){
+    byId("project-id").value = "";
+    byId("project-title").value = "";
+    byId("project-category").value = "uiux";
+    byId("project-desc").value = "";
+    byId("project-price").value = "";
+    byId("project-image").value = "";
+    byId("project-video-url").value = "";
+    if (byId("project-image-file")) byId("project-image-file").value = "";
+    if (byId("project-video-file")) byId("project-video-file").value = "";
+    byId("delete-project-btn").disabled = true;
+  }
+
+  function validateProject(){
+    const title = byId("project-title").value.trim();
+    const price = byId("project-price").value.trim();
+    if(!title) return "Title is required.";
+    if(price && Number(price) < 0) return "Price must be positive.";
+    return null;
+  }
+
+  async function saveProject(){
+    const err = validateProject();
+    if(err) return showMsg(err);
+
+    const projects = getProjects();
+    const id = byId("project-id").value || newId();
+
+    let imageValue = byId("project-image").value.trim();
+    let videoUrl = byId("project-video-url").value.trim();
+
+    const imgFileInput = byId("project-image-file");
+    if (imgFileInput && imgFileInput.files && imgFileInput.files[0]) {
+      const dataUrl = await fileToDataUrl(imgFileInput.files[0]);
+      if (isProbablyTooBigForLocalStorage(dataUrl)) {
+        return showMsg("Image too large. Use a smaller image or a URL/path.");
+      }
+      imageValue = dataUrl;
+    }
+
+    const vidFileInput = byId("project-video-file");
+    if (vidFileInput && vidFileInput.files && vidFileInput.files[0]) {
+      const dataUrl = await fileToDataUrl(vidFileInput.files[0]);
+      if (isProbablyTooBigForLocalStorage(dataUrl)) {
+        return showMsg("Video too large for browser storage. Use a video URL instead.");
+      }
+      videoUrl = dataUrl;
+    }
+
+    const data = {
+      id,
+      title: byId("project-title").value.trim(),
+      category: byId("project-category").value,
+      desc: byId("project-desc").value.trim(),
+      price: byId("project-price").value === "" ? "" : Number(byId("project-price").value),
+      image: imageValue,
+      videoUrl
+    };
+
+    const idx = projects.findIndex(x => x.id === id);
+    if(idx >= 0) projects[idx] = data;
+    else projects.unshift(data);
+
+    setProjects(projects);
+    renderProjects();
+    byId("project-id").value = id;
+    byId("delete-project-btn").disabled = false;
+
+    showMsg("Project saved ✅");
+  }
+
+  function deleteProject(){
+    const id = byId("project-id").value;
+    if(!id) return;
+
+    if(!confirm("Delete this project?")) return;
+
+    const projects = getProjects().filter(x => x.id !== id);
+    setProjects(projects);
+    renderProjects();
+    resetForm();
+    showMsg("Project deleted ✅");
+  }
+
+  // ====== Render Clients ======
+  function renderClients(){
+    const clients = getClients();
+    const empty = byId("clients-empty");
+    const table = byId("clients-table");
+    const body = byId("clients-body");
+    if (!empty || !table || !body) return;
+
+    body.innerHTML = "";
+
+    if(clients.length === 0){
+      empty.classList.remove("hidden");
+      table.style.display = "none";
+      return;
+    }
+
+    empty.classList.add("hidden");
+    table.style.display = "table";
+
+    clients.slice().reverse().forEach(c => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><strong>${escapeHtml(c.name || "—")}</strong></td>
+        <td class="muted">${escapeHtml(c.email || "—")}</td>
+        <td>${escapeHtml(c.projectTitle || "—")}</td>
+        <td>$${Number(c.amount || 0).toFixed(2)}</td>
+        <td class="muted">${escapeHtml(c.date || "—")}</td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+
+  function downloadJson(filename, obj){
+    const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function seedDemo(){
+    const demoProjects = [
+      { id: newId(), title:"iOS UI Kit", category:"uiux", desc:"Complete mobile wireframe kit.", price:29, image:"images/uiux.png" },
+      { id: newId(), title:"Moodboard Pack", category:"interior", desc:"Textures, palettes, and style references.", price:19, image:"images/interior.png" },
+      { id: newId(), title:"Modern Facade Concept", category:"exterior", desc:"Exterior elevation with materials.", price:39, image:"images/exterior.png" }
+    ];
+    setProjects(demoProjects);
+    renderProjects();
+    showMsg("Demo data added ✅");
+  }
+
+  function escapeHtml(str){
+    return String(str ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  // ====== Tabs ======
+  const tabServices = byId("tabServices");
+  const tabGallery  = byId("tabGallery");
+  const btnServices = byId("tabBtnServices");
+  const btnGallery  = byId("tabBtnGallery");
+
+  function showServicesTab(){
+    tabServices?.classList.remove("hidden");
+    tabGallery?.classList.add("hidden");
+    btnServices?.classList.add("primary");
+    btnGallery?.classList.remove("primary");
+  }
+
+  function showGalleryTab(){
+    tabGallery?.classList.remove("hidden");
+    tabServices?.classList.add("hidden");
+    btnGallery?.classList.add("primary");
+    btnServices?.classList.remove("primary");
+    window.dispatchEvent(new Event("GS_OPEN_GALLERY_TAB"));
+  }
+
+  btnServices?.addEventListener("click", showServicesTab);
+  btnGallery?.addEventListener("click", showGalleryTab);
+
+  // ====== Events ======
+  ensurePassword();
+
+  byId("login-btn")?.addEventListener("click", () => {
+    const input = byId("admin-password").value;
+    const real = localStorage.getItem(KEY_ADMIN_PASS) || DEFAULT_PASS;
+
+    if(input === real){
+      setAuthed(true);
+      showDashboard();
+    } else {
+      alert("Wrong password.");
+    }
+  });
+
+  byId("logout-btn")?.addEventListener("click", () => {
+    setAuthed(false);
+    sessionStorage.removeItem("GS_ADMIN_KEY");
+    showLogin();
+  });
+
+  byId("save-project-btn")?.addEventListener("click", saveProject);
+  byId("reset-form-btn")?.addEventListener("click", resetForm);
+  byId("delete-project-btn")?.addEventListener("click", deleteProject);
+
+  byId("export-projects-btn")?.addEventListener("click", () => downloadJson("gs-projects.json", getProjects()));
+  byId("export-clients-btn")?.addEventListener("click", () => downloadJson("gs-clients.json", getClients()));
+
+  byId("clear-projects-btn")?.addEventListener("click", () => {
+    if(confirm("Clear ALL projects?")) {
+      setProjects([]);
       renderProjects();
-      renderClients();
       resetForm();
-      showServicesTab();
     }
+  });
 
-    // ====== Render Projects ======
-    function renderProjects(){
-      const tbody = $("projects-body");
-      tbody.innerHTML = "";
-      const projects = getProjects();
+  byId("seed-demo-btn")?.addEventListener("click", seedDemo);
 
-      if(projects.length === 0){
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td colspan="5" class="muted">No projects yet. Add one above.</td>`;
-        tbody.appendChild(tr);
-        return;
-      }
-
-      projects.forEach(p => {
-        const tr = document.createElement("tr");
-        tr.style.cursor = "pointer";
-        tr.innerHTML = `
-          <td><strong>${escapeHtml(p.title)}</strong></td>
-          <td><span class="pill">${categoryLabel(p.category)}</span></td>
-          <td class="muted">${escapeHtml(p.desc || "")}</td>
-          <td>$${Number(p.price || 0).toFixed(2)}</td>
-          <td class="muted">${escapeHtml(p.image || "")}</td>
-        `;
-        tr.addEventListener("click", () => loadProjectToForm(p.id));
-        tbody.appendChild(tr);
-      });
-    }
-
-    function loadProjectToForm(id){
-      const projects = getProjects();
-      const p = projects.find(x => x.id === id);
-      if(!p) return;
-
-      $("project-video-url").value = p.videoUrl || "";
-      $("project-id").value = p.id;
-      $("project-title").value = p.title || "";
-      $("project-category").value = p.category || "uiux";
-      $("project-desc").value = p.desc || "";
-      $("project-price").value = p.price ?? "";
-      $("project-image").value = p.image || "";
-
-      $("delete-project-btn").disabled = false;
-      showMsg("Loaded for editing.");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-
-    function resetForm(){
-      $("project-id").value = "";
-      $("project-title").value = "";
-      $("project-category").value = "uiux";
-      $("project-desc").value = "";
-      $("project-price").value = "";
-      $("project-image").value = "";
-      $("project-video-url").value = "";
-      if ($("project-image-file")) $("project-image-file").value = "";
-      if ($("project-video-file")) $("project-video-file").value = "";
-      $("delete-project-btn").disabled = true;
-    }
-
-    function validateProject(){
-      const title = $("project-title").value.trim();
-      const price = $("project-price").value.trim();
-      if(!title) return "Title is required.";
-      if(price && Number(price) < 0) return "Price must be positive.";
-      return null;
-    }
-
-    async function saveProject(){
-      const err = validateProject();
-      if(err) return showMsg(err);
-
-      const projects = getProjects();
-      const id = $("project-id").value || newId();
-
-      let imageValue = $("project-image").value.trim();
-      let videoUrl = $("project-video-url").value.trim();
-
-      const imgFileInput = $("project-image-file");
-      if (imgFileInput && imgFileInput.files && imgFileInput.files[0]) {
-        const dataUrl = await fileToDataUrl(imgFileInput.files[0]);
-        if (isProbablyTooBigForLocalStorage(dataUrl)) {
-          return showMsg("Image too large. Use a smaller image or a URL/path.");
-        }
-        imageValue = dataUrl;
-      }
-
-      const vidFileInput = $("project-video-file");
-      if (vidFileInput && vidFileInput.files && vidFileInput.files[0]) {
-        const dataUrl = await fileToDataUrl(vidFileInput.files[0]);
-        if (isProbablyTooBigForLocalStorage(dataUrl)) {
-          return showMsg("Video too large for browser storage. Use a video URL instead.");
-        }
-        videoUrl = dataUrl;
-      }
-
-      const data = {
-        id,
-        title: $("project-title").value.trim(),
-        category: $("project-category").value,
-        desc: $("project-desc").value.trim(),
-        price: $("project-price").value === "" ? "" : Number($("project-price").value),
-        image: imageValue,
-        videoUrl: videoUrl
-      };
-
-      const idx = projects.findIndex(x => x.id === id);
-      if(idx >= 0) projects[idx] = data;
-      else projects.unshift(data);
-
-      setProjects(projects);
-      renderProjects();
-      $("project-id").value = id;
-      $("delete-project-btn").disabled = false;
-      showMsg("Project saved.");
-    }
-
-    function deleteProject(){
-      const id = $("project-id").value;
-      if(!id) return;
-
-      const ok = confirm("Delete this project?");
-      if(!ok) return;
-
-      let projects = getProjects();
-      projects = projects.filter(x => x.id !== id);
-      setProjects(projects);
-      renderProjects();
-      resetForm();
-      showMsg("Project deleted.");
-    }
-
-    // ====== Render Clients ======
-    function renderClients(){
-      const clients = getClients();
-      const empty = $("clients-empty");
-      const table = $("clients-table");
-      const body = $("clients-body");
-
-      body.innerHTML = "";
-
-      if(clients.length === 0){
-        empty.classList.remove("hidden");
-        table.style.display = "none";
-        return;
-      }
-
-      empty.classList.add("hidden");
-      table.style.display = "table";
-
-      clients.slice().reverse().forEach(c => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td><strong>${escapeHtml(c.name || "—")}</strong></td>
-          <td class="muted">${escapeHtml(c.email || "—")}</td>
-          <td>${escapeHtml(c.projectTitle || "—")}</td>
-          <td>$${Number(c.amount || 0).toFixed(2)}</td>
-          <td class="muted">${escapeHtml(c.date || "—")}</td>
-        `;
-        body.appendChild(tr);
-      });
-    }
-
-    // ====== Export / Clear ======
-    function downloadJson(filename, obj){
-      const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    }
-
-    function seedDemo(){
-      const demoProjects = [
-        { id: newId(), title:"iOS UI Kit", category:"uiux", desc:"Complete mobile wireframe kit.", price:29, image:"images/uiux.png" },
-        { id: newId(), title:"Moodboard Pack", category:"interior", desc:"Textures, palettes, and style references.", price:19, image:"images/interior.png" },
-        { id: newId(), title:"Modern Facade Concept", category:"exterior", desc:"Exterior elevation with materials.", price:39, image:"images/exterior.png" }
-      ];
-      const demoClients = [
-        { name:"Client One", email:"client1@example.com", projectTitle:"iOS UI Kit", amount:29, date:new Date().toISOString().slice(0,10) },
-        { name:"Client Two", email:"client2@example.com", projectTitle:"Modern Facade Concept", amount:39, date:new Date().toISOString().slice(0,10) }
-      ];
-      setProjects(demoProjects);
-      setClients(demoClients);
-      renderProjects();
-      renderClients();
-      showMsg("Demo data added.");
-    }
-
-    // ====== Basic XSS protection ======
-    function escapeHtml(str){
-      return String(str)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    // ====== Tabs ======
-    const tabServices = $("tabServices");
-    const tabGallery  = $("tabGallery");
-    const btnServices = $("tabBtnServices");
-    const btnGallery  = $("tabBtnGallery");
-
-    function showServicesTab(){
-      tabServices.classList.remove("hidden");
-      tabGallery.classList.add("hidden");
-      btnServices.classList.add("primary");
-      btnGallery.classList.remove("primary");
-    }
-
-    function showGalleryTab(){
-      tabGallery.classList.remove("hidden");
-      tabServices.classList.add("hidden");
-      btnGallery.classList.add("primary");
-      btnServices.classList.remove("primary");
-      window.dispatchEvent(new Event("GS_OPEN_GALLERY_TAB"));
-    }
-
-    btnServices.addEventListener("click", showServicesTab);
-    btnGallery.addEventListener("click", showGalleryTab);
-
-    // ====== Events ======
-    ensurePassword();
-
-    $("login-btn").addEventListener("click", () => {
-      const input = $("admin-password").value;
-      const real = localStorage.getItem(KEY_ADMIN_PASS) || DEFAULT_PASS;
-
-      if(input === real){
-        setAuthed(true);
-        showDashboard();
-      } else {
-        alert("Wrong password.");
-      }
-    });
-
-    $("change-pass-btn").addEventListener("click", () => {
-      const current = prompt("Enter current password:");
-      if(current === null) return;
-
-      const real = localStorage.getItem(KEY_ADMIN_PASS) || DEFAULT_PASS;
-      if(current !== real) return alert("Current password is wrong.");
-
-      const newPass = prompt("Enter new password (min 4 chars):");
-      if(!newPass || newPass.length < 4) return alert("Password too short.");
-
-      localStorage.setItem(KEY_ADMIN_PASS, newPass);
-      alert("Password changed.");
-    });
-
-    $("logout-btn").addEventListener("click", () => {
-      setAuthed(false);
-      sessionStorage.removeItem("GS_ADMIN_KEY");
-      showLogin();
-    });
-
-    $("save-project-btn").addEventListener("click", saveProject);
-    $("reset-form-btn").addEventListener("click", resetForm);
-    $("delete-project-btn").addEventListener("click", deleteProject);
-
-    $("export-projects-btn").addEventListener("click", () => downloadJson("gs-projects.json", getProjects()));
-    $("export-clients-btn").addEventListener("click", () => downloadJson("gs-clients.json", getClients()));
-
-    $("clear-projects-btn").addEventListener("click", () => {
-      if(confirm("Clear ALL projects?")) {
-        setProjects([]);
-        renderProjects();
-        resetForm();
-      }
-    });
-
-    $("clear-clients-btn").addEventListener("click", () => {
-      if(confirm("Clear ALL clients/purchases?")) {
-        setClients([]);
-        renderClients();
-      }
-    });
-
-    $("seed-demo-btn").addEventListener("click", seedDemo);
-
-    // ====== Auto-open correct view ======
-    if(isAuthed()) showDashboard();
-    else showLogin();
-  </script>
+  // ====== Auto-open correct view ======
+  if(isAuthed()) showDashboard();
+  else showLogin();
+})();
+</script>
 </body>
 </html>
+
