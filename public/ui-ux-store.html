@@ -63,6 +63,94 @@
    <script src="script.js"></script>
 <script src="store-data.js"></script>
 <script>
+  // Open popup
+  function openLeadModal({ id, title }) {
+    const m = document.getElementById("leadModal");
+    if (!m) return;
+
+    document.getElementById("leadProductId").value = id || "";
+    document.getElementById("leadProductTitle").value = title || "";
+
+    document.getElementById("leadStatus").textContent = "";
+    document.getElementById("leadSendBtn").disabled = false;
+
+    m.style.display = "block";
+  }
+
+  function closeLeadModal() {
+    const m = document.getElementById("leadModal");
+    if (!m) return;
+    m.style.display = "none";
+    document.getElementById("leadForm")?.reset();
+  }
+
+  // Close handlers
+  document.getElementById("leadModalClose")?.addEventListener("click", closeLeadModal);
+  document.getElementById("leadModalX")?.addEventListener("click", closeLeadModal);
+  document.getElementById("leadCancelBtn")?.addEventListener("click", closeLeadModal);
+
+  // Intercept Add to Cart buttons to open popup instead
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("button.add-cart-btn");
+    if (!btn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    openLeadModal({
+      id: btn.dataset.id,
+      title: btn.dataset.title
+    });
+  });
+
+  // Submit lead form -> /api/contact
+  document.getElementById("leadForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const status = document.getElementById("leadStatus");
+    const sendBtn = document.getElementById("leadSendBtn");
+
+    const payload = {
+      name: document.getElementById("leadName").value.trim(),
+      email: document.getElementById("leadEmail").value.trim(),
+      message: document.getElementById("leadMessage").value.trim(),
+      productId: document.getElementById("leadProductId").value,
+      productTitle: document.getElementById("leadProductTitle").value
+    };
+
+    if (!payload.name || !payload.email) return;
+
+    status.textContent = "Sending...";
+    sendBtn.disabled = true;
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || !json.ok) {
+        status.textContent = "Failed";
+        sendBtn.disabled = false;
+        alert("Send failed: " + (json.error || "unknown"));
+        return;
+      }
+
+      status.textContent = "Sent ✅";
+      alert("Done ✅ We received your info.");
+      closeLeadModal();
+    } catch (err) {
+      status.textContent = "Failed";
+      sendBtn.disabled = false;
+      alert("Network error: " + err.message);
+    }
+  });
+</script>
+  
+<script>
   renderStoreProducts({ category: "uiux", gridId: "store-grid" });
 </script>
 
@@ -139,4 +227,5 @@
   
 </body>
 </html>
+
 
