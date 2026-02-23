@@ -62,6 +62,34 @@
 
    <script src="script.js"></script>
 <script src="store-data.js"></script>
+
+<script>
+  // ✅ HARD OVERRIDE: stop any existing "Add to Cart" handlers
+  document.addEventListener(
+    "click",
+    (e) => {
+      const btn = e.target.closest("button.add-cart-btn");
+      if (!btn) return;
+
+      // Stop the event BEFORE it reaches the button handlers
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      // Open your popup instead
+      if (typeof openLeadModal === "function") {
+        openLeadModal({
+          id: btn.dataset.id,
+          title: btn.dataset.title,
+        });
+      } else {
+        alert("Popup function openLeadModal() not found. Paste Step 2 popup JS first.");
+      }
+    },
+    true // ✅ CAPTURE MODE (important)
+  );
+</script>
+  
 <script>
   // Open popup
   function openLeadModal({ id, title }) {
@@ -227,5 +255,6 @@
   
 </body>
 </html>
+
 
 
