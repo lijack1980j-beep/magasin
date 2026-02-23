@@ -35,226 +35,203 @@
 
   <section class="store-section">
     <div class="container">
-      <div class="store-grid" id="store-grid">
-        
-        
-        <div class="product-info">
-            <h3>iOS UI Kit</h3>
-            <p>Complete mobile wireframe kit.</p>
-            <div class="price">$29.00</div>
-            <button class="add-cart-btn">Add to Cart</button>
-          </div>
-        </div>
-
-        
-
-        
-
-      </div>
+      <!-- ✅ store-data.js will render products here -->
+      <div class="store-grid" id="store-grid"></div>
     </div>
   </section>
 
   <footer class="footer">
     <div class="container">
-      <p>&copy; 2019–2025 Glitch Signal. All rights reserved.</p>
+      <p>&copy; 2019–2026 Glitch Signal. All rights reserved.</p>
     </div>
   </footer>
 
-   <script src="script.js"></script>
-<script src="store-data.js"></script>
+  <!-- ===== Contact Popup (Add to Cart -> Lead Form) ===== -->
+  <div id="leadModal" class="gs-modal" style="display:none;">
+    <div class="gs-modal-backdrop" id="leadModalClose"></div>
 
-<script>
-  // ✅ HARD OVERRIDE: stop any existing "Add to Cart" handlers
-  document.addEventListener(
-    "click",
-    (e) => {
-      const btn = e.target.closest("button.add-cart-btn");
-      if (!btn) return;
+    <div class="gs-modal-card" role="dialog" aria-modal="true" aria-labelledby="leadTitle">
+      <div class="gs-modal-head">
+        <h3 id="leadTitle" style="margin:0;">Send your info</h3>
+        <button id="leadModalX" type="button" class="gs-modal-x">✕</button>
+      </div>
 
-      // Stop the event BEFORE it reaches the button handlers
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
+      <p style="opacity:.85;margin:8px 0 14px;">
+        We’ll contact you on Gmail after you submit.
+      </p>
 
-      // Open your popup instead
-      if (typeof openLeadModal === "function") {
-        openLeadModal({
-          id: btn.dataset.id,
-          title: btn.dataset.title,
-        });
-      } else {
-        alert("Popup function openLeadModal() not found. Paste Step 2 popup JS first.");
+      <form id="leadForm">
+        <input type="hidden" id="leadProductId" />
+        <input type="hidden" id="leadProductTitle" />
+
+        <label style="display:block;margin:10px 0 6px;">Your Name</label>
+        <input id="leadName" required placeholder="Full name" />
+
+        <label style="display:block;margin:10px 0 6px;">Email</label>
+        <input id="leadEmail" type="email" required placeholder="you@example.com" />
+
+        <label style="display:block;margin:10px 0 6px;">Message (optional)</label>
+        <textarea id="leadMessage" rows="4" placeholder="Tell us what you need..."></textarea>
+
+        <div style="display:flex;gap:10px;align-items:center;margin-top:14px;">
+          <button id="leadSendBtn" class="btn primary" type="submit">Submit</button>
+          <button id="leadCancelBtn" class="btn" type="button">Cancel</button>
+          <span id="leadStatus" style="margin-left:auto;opacity:.8;"></span>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <style>
+    .gs-modal { position: fixed; inset: 0; z-index: 9999; }
+    .gs-modal-backdrop { position:absolute; inset:0; background: rgba(0,0,0,.6); }
+    .gs-modal-card{
+      position: relative;
+      width: min(520px, 92vw);
+      margin: 10vh auto 0;
+      background: rgba(20,20,20,.92);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 18px;
+      padding: 16px;
+      backdrop-filter: blur(10px);
+      color: #fff;
+    }
+    .gs-modal-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .gs-modal-x{
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.06);
+      color:#fff;
+      border-radius: 10px;
+      padding: 6px 10px;
+      cursor:pointer;
+    }
+    #leadForm input, #leadForm textarea{
+      width:100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.25);
+      color:#fff;
+      outline:none;
+      font-family: Poppins, sans-serif;
+    }
+  </style>
+
+  <!-- Your scripts -->
+  <script src="script.js"></script>
+  <script src="store-data.js"></script>
+
+  <!-- ✅ Popup logic + click intercept (single, clean, working) -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const $ = (id) => document.getElementById(id);
+
+      function openLeadModal({ id, title }) {
+        const m = $("leadModal");
+        if (!m) return;
+
+        $("leadProductId").value = id || "";
+        $("leadProductTitle").value = title || "";
+
+        $("leadStatus").textContent = "";
+        $("leadSendBtn").disabled = false;
+
+        m.style.display = "block";
       }
-    },
-    true // ✅ CAPTURE MODE (important)
-  );
-</script>
-  
-<script>
-  // Open popup
-  function openLeadModal({ id, title }) {
-    const m = document.getElementById("leadModal");
-    if (!m) return;
 
-    document.getElementById("leadProductId").value = id || "";
-    document.getElementById("leadProductTitle").value = title || "";
+      function closeLeadModal() {
+        const m = $("leadModal");
+        if (!m) return;
+        m.style.display = "none";
+        $("leadForm")?.reset();
+      }
 
-    document.getElementById("leadStatus").textContent = "";
-    document.getElementById("leadSendBtn").disabled = false;
+      // Expose if needed
+      window.openLeadModal = openLeadModal;
+      window.closeLeadModal = closeLeadModal;
 
-    m.style.display = "block";
-  }
+      // ✅ Close: backdrop + X + Cancel + ESC
+      $("leadModalClose")?.addEventListener("click", (e) => { e.preventDefault(); closeLeadModal(); });
+      $("leadModalX")?.addEventListener("click", (e) => { e.preventDefault(); closeLeadModal(); });
+      $("leadCancelBtn")?.addEventListener("click", (e) => { e.preventDefault(); closeLeadModal(); });
 
-  function closeLeadModal() {
-    const m = document.getElementById("leadModal");
-    if (!m) return;
-    m.style.display = "none";
-    document.getElementById("leadForm")?.reset();
-  }
-
-  // Close handlers
-  document.getElementById("leadModalClose")?.addEventListener("click", closeLeadModal);
-  document.getElementById("leadModalX")?.addEventListener("click", closeLeadModal);
-  document.getElementById("leadCancelBtn")?.addEventListener("click", closeLeadModal);
-
-  // Intercept Add to Cart buttons to open popup instead
-  document.addEventListener("click", (e) => {
-    const btn = e.target.closest("button.add-cart-btn");
-    if (!btn) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    openLeadModal({
-      id: btn.dataset.id,
-      title: btn.dataset.title
-    });
-  });
-
-  // Submit lead form -> /api/contact
-  document.getElementById("leadForm")?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const status = document.getElementById("leadStatus");
-    const sendBtn = document.getElementById("leadSendBtn");
-
-    const payload = {
-      name: document.getElementById("leadName").value.trim(),
-      email: document.getElementById("leadEmail").value.trim(),
-      message: document.getElementById("leadMessage").value.trim(),
-      productId: document.getElementById("leadProductId").value,
-      productTitle: document.getElementById("leadProductTitle").value
-    };
-
-    if (!payload.name || !payload.email) return;
-
-    status.textContent = "Sending...";
-    sendBtn.disabled = true;
-
-    try {
-      const res = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeLeadModal();
       });
 
-      const json = await res.json().catch(() => ({}));
+      // ✅ Intercept Add to Cart buttons and open modal instead
+      // capture mode so it beats any existing addToCart handlers
+      document.addEventListener("click", (e) => {
+        const btn = e.target.closest("button.add-cart-btn");
+        if (!btn) return;
 
-      if (!res.ok || !json.ok) {
-        status.textContent = "Failed";
-        sendBtn.disabled = false;
-        alert("Send failed: " + (json.error || "unknown"));
-        return;
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+
+        openLeadModal({
+          id: btn.dataset.id || "",
+          title: btn.dataset.title || "Project",
+        });
+      }, true);
+
+      // ✅ Submit lead -> /api/contact
+      $("leadForm")?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const status = $("leadStatus");
+        const sendBtn = $("leadSendBtn");
+
+        const payload = {
+          name: $("leadName").value.trim(),
+          email: $("leadEmail").value.trim(),
+          message: $("leadMessage").value.trim(),
+          productId: $("leadProductId").value,
+          productTitle: $("leadProductTitle").value,
+        };
+
+        if (!payload.name || !payload.email) {
+          alert("Name + Email required");
+          return;
+        }
+
+        status.textContent = "Sending...";
+        sendBtn.disabled = true;
+
+        try {
+          const res = await fetch("/api/contact", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          const json = await res.json().catch(() => ({}));
+
+          if (!res.ok || !json.ok) {
+            status.textContent = "Failed";
+            sendBtn.disabled = false;
+            alert("Send failed: " + (json.error || "unknown"));
+            return;
+          }
+
+          status.textContent = "Sent ✅";
+          closeLeadModal();
+          alert("Done ✅ We received your info.");
+        } catch (err) {
+          status.textContent = "Failed";
+          sendBtn.disabled = false;
+          alert("Network error: " + err.message);
+        }
+      });
+
+      // ✅ Render UI/UX products into this page
+      if (typeof renderStoreProducts === "function") {
+        renderStoreProducts({ category: "uiux", gridId: "store-grid" });
+      } else {
+        console.warn("renderStoreProducts() not found. Make sure store-data.js loads correctly.");
       }
+    });
+  </script>
 
-      status.textContent = "Sent ✅";
-      alert("Done ✅ We received your info.");
-      closeLeadModal();
-    } catch (err) {
-      status.textContent = "Failed";
-      sendBtn.disabled = false;
-      alert("Network error: " + err.message);
-    }
-  });
-</script>
-  
-<script>
-  renderStoreProducts({ category: "uiux", gridId: "store-grid" });
-</script>
-
-  <!-- ===== Contact Popup (Add to Cart -> Lead Form) ===== -->
-<div id="leadModal" class="gs-modal" style="display:none;">
-  <div class="gs-modal-backdrop" id="leadModalClose"></div>
-
-  <div class="gs-modal-card" role="dialog" aria-modal="true" aria-labelledby="leadTitle">
-    <div class="gs-modal-head">
-      <h3 id="leadTitle" style="margin:0;">Send your info</h3>
-      <button id="leadModalX" type="button" class="gs-modal-x">✕</button>
-    </div>
-
-    <p style="opacity:.85;margin:8px 0 14px;">
-      We’ll contact you on Gmail after you submit.
-    </p>
-
-    <form id="leadForm">
-      <input type="hidden" id="leadProductId" />
-      <input type="hidden" id="leadProductTitle" />
-
-      <label style="display:block;margin:10px 0 6px;">Your Name</label>
-      <input id="leadName" required placeholder="Full name" />
-
-      <label style="display:block;margin:10px 0 6px;">Email</label>
-      <input id="leadEmail" type="email" required placeholder="you@example.com" />
-
-      <label style="display:block;margin:10px 0 6px;">Message (optional)</label>
-      <textarea id="leadMessage" rows="4" placeholder="Tell us what you need..."></textarea>
-
-      <div style="display:flex;gap:10px;align-items:center;margin-top:14px;">
-        <button id="leadSendBtn" class="btn primary" type="submit">Submit</button>
-        <button id="leadCancelBtn" class="btn" type="button">Cancel</button>
-        <span id="leadStatus" style="margin-left:auto;opacity:.8;"></span>
-      </div>
-    </form>
-  </div>
-</div>
-
-<style>
-  .gs-modal { position: fixed; inset: 0; z-index: 9999; }
-  .gs-modal-backdrop { position:absolute; inset:0; background: rgba(0,0,0,.6); }
-  .gs-modal-card{
-    position: relative;
-    width: min(520px, 92vw);
-    margin: 10vh auto 0;
-    background: rgba(20,20,20,.92);
-    border: 1px solid rgba(255,255,255,.12);
-    border-radius: 18px;
-    padding: 16px;
-    backdrop-filter: blur(10px);
-    color: #fff;
-  }
-  .gs-modal-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
-  .gs-modal-x{
-    border:1px solid rgba(255,255,255,.16);
-    background: rgba(255,255,255,.06);
-    color:#fff;
-    border-radius: 10px;
-    padding: 6px 10px;
-    cursor:pointer;
-  }
-  #leadForm input, #leadForm textarea{
-    width:100%;
-    padding: 12px;
-    border-radius: 12px;
-    border: 1px solid rgba(255,255,255,.14);
-    background: rgba(0,0,0,.25);
-    color:#fff;
-    outline:none;
-    font-family: Poppins, sans-serif;
-  }
-</style>
-  
 </body>
 </html>
-
-
-
