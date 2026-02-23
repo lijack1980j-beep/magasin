@@ -184,13 +184,18 @@
         const status = $("leadStatus");
         const sendBtn = $("leadSendBtn");
 
-        const payload = {
-          name: $("leadName").value.trim(),
-          email: $("leadEmail").value.trim(),
-          message: $("leadMessage").value.trim(),
-          productId: $("leadProductId").value,
-          productTitle: $("leadProductTitle").value,
-        };
+        // 1) Get reCAPTCHA token
+const token = await grecaptcha.execute("6Ld1z3QsAAAAAPTDv7VKZy9wYoqSUsoubaBKZ7Jw", { action: "lead_submit" });
+
+// 2) Build payload
+const payload = {
+  name: document.getElementById("leadName").value.trim(),
+  email: document.getElementById("leadEmail").value.trim(),
+  message: document.getElementById("leadMessage").value.trim(),
+  productId: document.getElementById("leadProductId").value,
+  productTitle: document.getElementById("leadProductTitle").value,
+  recaptchaToken: token
+};
 
         if (!payload.name || !payload.email) {
           alert("Name + Email required");
@@ -237,5 +242,6 @@
 
 </body>
 </html>
+
 
 
