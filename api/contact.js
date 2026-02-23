@@ -74,3 +74,50 @@ function escapeHtml(s) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+
+
+
+
+
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") return res.status(405).json({ ok: false, error: "Method not allowed" });
+
+  try {
+    const { name, email, message, productId, productTitle } = req.body || {};
+
+    if (!name || !email) {
+      return res.status(400).json({ ok: false, error: "Missing name or email" });
+    }
+
+    const subject = `New Client Lead: ${productTitle || "Service"} (${email})`;
+
+    const html = `
+      <div style="font-family:Arial,sans-serif">
+        <h2>New Client Lead</h2>
+        <p><b>Name:</b> ${name}</p>
+        <p><b>Email:</b> ${email}</p>
+        <p><b>Product:</b> ${productTitle || "—"}</p>
+        <p><b>Product ID:</b> ${productId || "—"}</p>
+        <p><b>Message:</b><br/>${(message || "").replace(/\n/g, "<br/>")}</p>
+      </div>
+    `;
+
+    const toEmail = process.env.CONTACT_TO_EMAIL; // your gmail
+
+    const sent = await resend.emails.send({
+      from: process.env.CONTACT_FROM_EMAIL, // verified sender on Resend
+      to: toEmail,
+      replyTo: email,
+      subject,
+      html
+    });
+
+    return res.status(200).json({ ok: true, id: sent?.id || null });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: e.message });
+  }
+}
