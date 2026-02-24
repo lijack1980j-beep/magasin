@@ -1,3 +1,6 @@
+// /api/admin-project.js  (FULL FILE)
+// Supabase Gallery CRUD + extra_images support
+
 const { createClient } = require("@supabase/supabase-js");
 
 const supabase = createClient(
@@ -40,7 +43,7 @@ module.exports = async (req, res) => {
     if (req.method === "GET") {
       const { data, error } = await supabase
         .from("projects")
-        .select("id,title,description,category,tags,cover_image_url,repo_url,live_url,featured,sort_order,created_at")
+        .select("id,title,description,category,tags,cover_image_url,extra_images,repo_url,live_url,featured,sort_order,created_at")
         .order("featured", { ascending: false })
         .order("sort_order", { ascending: true })
         .order("created_at", { ascending: false });
@@ -75,6 +78,11 @@ module.exports = async (req, res) => {
         featured,
         sort_order,
         cover_image_url,
+
+        // ✅ NEW
+        extra_images,
+
+        // optional upload (not used on vercel if 413)
         image_base64,
         image_mime,
         image_filename
@@ -95,6 +103,11 @@ module.exports = async (req, res) => {
         featured: !!featured,
         sort_order: Number(sort_order || 0),
         cover_image_url: cover_image_url ? String(cover_image_url).trim() : null,
+
+        // ✅ NEW
+        extra_images: Array.isArray(extra_images)
+          ? extra_images.map(x => String(x).trim()).filter(Boolean)
+          : String(extra_images || "").split("\n").map(s => s.trim()).filter(Boolean),
       };
 
       // Upload if provided
