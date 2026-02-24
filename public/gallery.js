@@ -58,36 +58,6 @@ function getDefaultImage(cat) {
   return CATEGORY_DEFAULT_IMAGE[cat] || CATEGORY_DEFAULT_IMAGE.other;
 }
 
-/**
- * ✅ extra_images may arrive as:
- * - array: ["url1","url2"]
- * - string CSV: "url1, url2"
- * - string JSON: '["url1","url2"]'
- * We'll normalize to array.
- */
-function normalizeExtraImages(v) {
-  if (!v) return [];
-  if (Array.isArray(v)) return v.filter(Boolean).map(String);
-
-  if (typeof v === "string") {
-    const s = v.trim();
-    if (!s) return [];
-
-    // JSON array string
-    if ((s.startsWith("[") && s.endsWith("]")) || (s.startsWith("{") && s.endsWith("}"))) {
-      try {
-        const parsed = JSON.parse(s);
-        if (Array.isArray(parsed)) return parsed.filter(Boolean).map(String);
-      } catch {}
-    }
-
-    // CSV string
-    return s.split(",").map(x => x.trim()).filter(Boolean);
-  }
-
-  return [];
-}
-
 // ✅ read category from URL: /gallery.html?cat=uiux
 {
   const params = new URLSearchParams(window.location.search);
@@ -101,7 +71,8 @@ function applyFilters(list) {
   const q = state.q.toLowerCase().trim();
   if (q) {
     out = out.filter((p) => {
-      const hay = `${p.title} ${p.description} ${(p.tags || []).join(" ")}`.toLowerCase();
+      const tags = Array.isArray(p.tags) ? p.tags.join(" ") : String(p.tags || "");
+      const hay = `${p.title || ""} ${p.description || ""} ${tags}`.toLowerCase();
       return hay.includes(q);
     });
   }
@@ -113,7 +84,7 @@ function applyFilters(list) {
   if (state.sort === "stars") {
     out.sort((a, b) => (b.stars_count || 0) - (a.stars_count || 0));
   } else if (state.sort === "az") {
-    out.sort((a, b) => String(a.title).localeCompare(String(b.title)));
+    out.sort((a, b) => String(a.title || "").localeCompare(String(b.title || "")));
   } else {
     out.sort((a, b) => {
       const da = a.created_at ? new Date(a.created_at).getTime() : 0;
@@ -139,7 +110,10 @@ function renderFilters() {
 
   const q = state.q.toLowerCase().trim();
   const base = q
-    ? state.projects.filter(p => (`${p.title} ${p.description} ${(p.tags||[]).join(" ")}`).toLowerCase().includes(q))
+    ? state.projects.filter(p => {
+        const tags = Array.isArray(p.tags) ? p.tags.join(" ") : String(p.tags || "");
+        return `${p.title || ""} ${p.description || ""} ${tags}`.toLowerCase().includes(q);
+      })
     : state.projects;
 
   const counts = countByCategory(base);
@@ -173,7 +147,7 @@ function projectCard(p) {
   const repo = p.repo_url ? `<a class="mini-link" href="${escapeHtml(p.repo_url)}" target="_blank" rel="noopener">GitHub</a>` : "";
   const live = p.live_url ? `<a class="mini-link" href="${escapeHtml(p.live_url)}" target="_blank" rel="noopener">Live</a>` : "";
 
-  // ✅ IMPORTANT: data-id is required for popup
+  // ✅ data-id is required for popup
   return `
     <article class="g-card" data-id="${escapeHtml(p.id)}" role="button" tabindex="0">
       <div class="g-card-img">
@@ -242,6 +216,14 @@ function render() {
   else root.innerHTML = `<div class="g-grid">${filtered.map(projectCard).join("")}</div>`;
 }
 
+function normalizeExtraImages(value){
+  // array OR "url1, url2"
+  if (Array.isArray(value)) return value.filter(Boolean).map(String);
+  const s = String(value || "").trim();
+  if (!s) return [];
+  return s.split(",").map(x => x.trim()).filter(Boolean);
+}
+
 async function loadProjects() {
   if (statusEl) statusEl.textContent = "Loading projects...";
 
@@ -259,13 +241,17 @@ async function loadProjects() {
 
     state.projects = (json.projects || []).map(p => ({
       ...p,
-      id: p.id,
+      id: p.id ?? "",
+      title: p.title ?? "",
+      description: p.description ?? p.desc ?? "",
       category: normalizeCategory(p.category),
-      tags: Array.isArray(p.tags) ? p.tags : (typeof p.tags === "string" ? p.tags.split(",").map(x=>x.trim()).filter(Boolean) : []),
+      tags: Array.isArray(p.tags) ? p.tags : normalizeExtraImages(p.tags), // accepts "a,b,c"
       stars_count: Number(p.stars_count || 0),
 
-      // ✅ VERY IMPORTANT: normalize extra images so modal will show URLs
+      // ✅ extra images: supports array OR string
       extra_images: normalizeExtraImages(p.extra_images),
+      images: normalizeExtraImages(p.images),
+      gallery_images: normalizeExtraImages(p.gallery_images),
     }));
 
     if (statusEl) statusEl.textContent = state.projects.length ? "" : "No projects found yet.";
