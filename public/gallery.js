@@ -1,4 +1,4 @@
-// gallery.js (clean + stable)
+// gallery.js (stable + modal-ready)
 // Requires in gallery.html:
 // <div id="galleryStatus"></div>
 // <div id="galleryRoot"></div>
@@ -31,6 +31,9 @@ const state = {
   q: "",
   sort: "new",
 };
+
+// ✅ expose for modal script
+window.__GS_STATE__ = state;
 
 function escapeHtml(str) {
   return String(str ?? "")
@@ -104,7 +107,6 @@ function countByCategory(list) {
 function renderFilters() {
   if (!filtersEl) return;
 
-  // counts should ignore current category filter but keep search text
   const q = state.q.toLowerCase().trim();
   const base = q
     ? state.projects.filter(p => (`${p.title} ${p.description} ${(p.tags||[]).join(" ")}`).toLowerCase().includes(q))
@@ -141,8 +143,9 @@ function projectCard(p) {
   const repo = p.repo_url ? `<a class="mini-link" href="${escapeHtml(p.repo_url)}" target="_blank" rel="noopener">GitHub</a>` : "";
   const live = p.live_url ? `<a class="mini-link" href="${escapeHtml(p.live_url)}" target="_blank" rel="noopener">Live</a>` : "";
 
+  // ✅ IMPORTANT: data-id is required for popup
   return `
-    <article class="g-card">
+    <article class="g-card" data-id="${escapeHtml(p.id)}" role="button" tabindex="0">
       <div class="g-card-img">
         <img src="${escapeHtml(img)}"
              alt="${escapeHtml(p.title || "Project")}"
@@ -205,7 +208,6 @@ function render() {
     return;
   }
 
-  // If all categories: grouped sections. Otherwise: flat grid.
   if (state.category === "all") renderGrouped(filtered);
   else root.innerHTML = `<div class="g-grid">${filtered.map(projectCard).join("")}</div>`;
 }
@@ -213,24 +215,16 @@ function render() {
 async function loadProjects() {
   if (statusEl) statusEl.textContent = "Loading projects...";
 
-  const params = new URLSearchParams(window.location.search);
-  const cat = params.get("cat");
-  const url = cat
-    ? `/api/projects?cat=${encodeURIComponent(normalizeCategory(cat))}`
-    : `/api/projects`;
-
   try {
-   const res = await fetch("/api/projects", { cache: "no-store" });
+    const res = await fetch("/api/projects", { cache: "no-store" });
 
-const ct = res.headers.get("content-type") || "";
-if (!ct.includes("application/json")) {
-  const text = await res.text();
-  throw new Error(`API returned ${res.status} (${ct}). First chars: ` + text.slice(0, 80));
-}
+    const ct = res.headers.get("content-type") || "";
+    if (!ct.includes("application/json")) {
+      const text = await res.text();
+      throw new Error(`API returned ${res.status} (${ct}). First chars: ${text.slice(0, 120)}`);
+    }
 
-const json = await res.json();
-if (!res.ok || !json.ok) throw new Error(json.error || "Failed to load");
-
+    const json = await res.json();
     if (!res.ok || !json.ok) throw new Error(json.error || "Failed to load");
 
     state.projects = (json.projects || []).map(p => ({
@@ -238,6 +232,7 @@ if (!res.ok || !json.ok) throw new Error(json.error || "Failed to load");
       category: normalizeCategory(p.category),
       tags: Array.isArray(p.tags) ? p.tags : [],
       stars_count: Number(p.stars_count || 0),
+      extra_images: Array.isArray(p.extra_images) ? p.extra_images : [], // for popup
     }));
 
     if (statusEl) statusEl.textContent = state.projects.length ? "" : "No projects found yet.";
@@ -248,7 +243,7 @@ if (!res.ok || !json.ok) throw new Error(json.error || "Failed to load");
   }
 }
 
-// Hook UI if present
+// Hook UI
 if (searchInput) {
   searchInput.addEventListener("input", (e) => {
     state.q = e.target.value || "";
