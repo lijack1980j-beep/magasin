@@ -1,3 +1,4 @@
+<!-- /admin.html  (FULL FILE) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,7 +10,6 @@
   <link rel="stylesheet" href="/styles.css" />
 
   <style>
-    /* Small extra styles (keeps your design, but makes admin clean) */
     .admin-wrap { padding: 90px 0 60px; }
     .admin-card {
       background: rgba(255,255,255,0.04);
@@ -58,9 +58,13 @@
       color: #fff;
       cursor: pointer;
       font-weight: 600;
+      transition: transform .15s ease, border-color .15s ease, background .15s ease;
     }
+    .btn:hover { transform: translateY(-1px); border-color: rgba(255,255,255,0.24); }
     .btn.primary { background: rgba(0, 255, 255, 0.12); border-color: rgba(0,255,255,0.25); }
+    .btn.primary:hover { background: rgba(0, 255, 255, 0.18); border-color: rgba(0,255,255,0.35); }
     .btn.danger { background: rgba(255, 0, 80, 0.14); border-color: rgba(255,0,80,0.28); }
+    .btn.danger:hover { background: rgba(255, 0, 80, 0.20); border-color: rgba(255,0,80,0.40); }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .table {
@@ -193,14 +197,18 @@
                     <input id="project-price" type="number" step="0.01" placeholder="29.00" />
                   </div>
                   <div>
-                    <label for="project-image">Image (URL / Path)</label>
+                    <label for="project-image">Cover Image (URL / Path)</label>
                     <input id="project-image" type="text" placeholder="images/uiux.png OR https://..." />
+
+                    <!-- ✅ NEW: multiple images -->
+                    <label for="project-images">More Images (URLs, one per line)</label>
+                    <textarea id="project-images" rows="4" placeholder="https://.../1.jpg&#10;https://.../2.jpg"></textarea>
 
                     <label for="project-image-file">Upload Image (recommended)</label>
                     <input id="project-image-file" type="file" accept="image/*" />
 
                     <label for="project-video-url">Video (URL)</label>
-                    <input id="project-video-url" type="text" placeholder="https://youtube.com/... or direct .mp4 link" />
+                    <input id="project-video-url" type="text" placeholder="Direct .mp4 link recommended" />
 
                     <label for="project-video-file">Upload Video (small only)</label>
                     <input id="project-video-file" type="file" accept="video/*" />
@@ -267,7 +275,9 @@
                       <th>Category</th>
                       <th>Description</th>
                       <th>Price</th>
-                      <th>Image</th>
+                      <th>Cover</th>
+                      <th>Images</th>
+                      <th>Video</th>
                     </tr>
                   </thead>
                   <tbody id="projects-body"></tbody>
@@ -337,6 +347,10 @@
               <label>OR image URL</label>
               <input id="pImageUrl" placeholder="https://..." />
 
+              <!-- ✅ NEW: extra images -->
+              <label>More images (URLs, one per line)</label>
+              <textarea id="pExtraImages" rows="4" placeholder="https://.../1.jpg&#10;https://.../2.jpg"></textarea>
+
               <div class="btn-row">
                 <button class="btn primary" id="saveProjectBtn" type="button">Save to Gallery</button>
                 <button class="btn" id="cancelEditBtn" type="button">Cancel Edit</button>
@@ -363,7 +377,7 @@
   <script src="/admin-gallery.js" defer></script>
 
   <!-- Admin Logic (Services + Auth + Tabs) -->
- <script>
+  <script>
 (() => {
   // ====== Storage Keys ======
   const KEY_ADMIN_PASS = "gs_admin_password";
@@ -372,7 +386,6 @@
   const KEY_CLIENTS    = "gs_clients";
 
   const DEFAULT_PASS = "0000";
-
   const byId = (id) => document.getElementById(id);
 
   function fileToDataUrl(file) {
@@ -460,7 +473,7 @@
     showServicesTab();
   }
 
-  // ====== Render Projects ======
+  // ====== Render Projects (Services/localStorage) ======
   function renderProjects(){
     const tbody = byId("projects-body");
     if (!tbody) return;
@@ -469,7 +482,7 @@
 
     if(projects.length === 0){
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td colspan="5" class="muted">No projects yet. Add one above.</td>`;
+      tr.innerHTML = `<td colspan="7" class="muted">No projects yet. Add one above.</td>`;
       tbody.appendChild(tr);
       return;
     }
@@ -481,8 +494,10 @@
         <td><strong>${escapeHtml(p.title)}</strong></td>
         <td><span class="pill">${categoryLabel(p.category)}</span></td>
         <td class="muted">${escapeHtml(p.desc || "")}</td>
-        <td>$${Number(p.price || 0).toFixed(2)}</td>
-        <td class="muted">${escapeHtml(p.image || "")}</td>
+        <td>${p.price === "" || p.price == null ? "—" : "$" + Number(p.price).toFixed(2)}</td>
+        <td class="muted" style="max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(p.image || "")}</td>
+        <td class="muted">${Array.isArray(p.images) ? p.images.length : 0}</td>
+        <td class="muted">${p.videoUrl ? "yes" : "—"}</td>
       `;
       tr.addEventListener("click", () => loadProjectToForm(p.id));
       tbody.appendChild(tr);
@@ -494,13 +509,14 @@
     const p = projects.find(x => x.id === id);
     if(!p) return;
 
-    byId("project-video-url").value = p.videoUrl || "";
     byId("project-id").value = p.id;
     byId("project-title").value = p.title || "";
     byId("project-category").value = p.category || "uiux";
     byId("project-desc").value = p.desc || "";
     byId("project-price").value = p.price ?? "";
     byId("project-image").value = p.image || "";
+    byId("project-images").value = Array.isArray(p.images) ? p.images.join("\n") : "";
+    byId("project-video-url").value = p.videoUrl || "";
 
     byId("delete-project-btn").disabled = false;
     showMsg("Loaded for editing.");
@@ -514,6 +530,7 @@
     byId("project-desc").value = "";
     byId("project-price").value = "";
     byId("project-image").value = "";
+    byId("project-images").value = "";
     byId("project-video-url").value = "";
     if (byId("project-image-file")) byId("project-image-file").value = "";
     if (byId("project-video-file")) byId("project-video-file").value = "";
@@ -537,6 +554,12 @@
 
     let imageValue = byId("project-image").value.trim();
     let videoUrl = byId("project-video-url").value.trim();
+
+    // ✅ NEW: multiple images
+    const images = (byId("project-images")?.value || "")
+      .split("\n")
+      .map(s => s.trim())
+      .filter(Boolean);
 
     const imgFileInput = byId("project-image-file");
     if (imgFileInput && imgFileInput.files && imgFileInput.files[0]) {
@@ -562,7 +585,8 @@
       category: byId("project-category").value,
       desc: byId("project-desc").value.trim(),
       price: byId("project-price").value === "" ? "" : Number(byId("project-price").value),
-      image: imageValue,
+      image: imageValue,   // cover
+      images,              // ✅ NEW
       videoUrl
     };
 
@@ -637,9 +661,9 @@
 
   function seedDemo(){
     const demoProjects = [
-      { id: newId(), title:"iOS UI Kit", category:"uiux", desc:"Complete mobile wireframe kit.", price:29, image:"images/uiux.png" },
-      { id: newId(), title:"Moodboard Pack", category:"interior", desc:"Textures, palettes, and style references.", price:19, image:"images/interior.png" },
-      { id: newId(), title:"Modern Facade Concept", category:"exterior", desc:"Exterior elevation with materials.", price:39, image:"images/exterior.png" }
+      { id: newId(), title:"iOS UI Kit", category:"uiux", desc:"Complete mobile wireframe kit.", price:29, image:"images/uiux.png", images:["images/uiux.png","images/uiux.png"], videoUrl:"" },
+      { id: newId(), title:"Moodboard Pack", category:"interior", desc:"Textures, palettes, and style references.", price:19, image:"images/interior.png", images:["images/interior.png"], videoUrl:"" },
+      { id: newId(), title:"Modern Facade Concept", category:"exterior", desc:"Exterior elevation with materials.", price:39, image:"images/exterior.png", images:["images/exterior.png"], videoUrl:"" }
     ];
     setProjects(demoProjects);
     renderProjects();
@@ -715,13 +739,19 @@
     }
   });
 
+  byId("clear-clients-btn")?.addEventListener("click", () => {
+    if(confirm("Clear ALL clients?")) {
+      setClients([]);
+      renderClients();
+    }
+  });
+
   byId("seed-demo-btn")?.addEventListener("click", seedDemo);
 
   // ====== Auto-open correct view ======
   if(isAuthed()) showDashboard();
   else showLogin();
 })();
-</script>
+  </script>
 </body>
 </html>
-
