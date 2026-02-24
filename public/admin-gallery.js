@@ -1,5 +1,5 @@
-// public/admin-gallery.js
-// Gallery Manager tab logic
+// /public/admin-gallery.js  (FULL FILE)
+// Gallery Manager tab logic (Supabase)
 // Requires /api/admin-project with GET/POST/PUT/DELETE protected by x-admin-key
 
 (() => {
@@ -50,6 +50,14 @@
       featured: document.getElementById("pFeatured")?.checked || false,
       sort_order: Number(document.getElementById("pSort")?.value || 0),
       cover_image_url: document.getElementById("pImageUrl")?.value.trim() || null,
+
+      // ✅ NEW: extra images URLs
+      extra_images: (document.getElementById("pExtraImages")?.value || "")
+        .split("\n")
+        .map(s => s.trim())
+        .filter(Boolean),
+
+      // kept but disabled (413)
       file: document.getElementById("pFile")?.files?.[0] || null,
     };
   }
@@ -65,6 +73,10 @@
     document.getElementById("pSort").value = Number(p.sort_order || 0);
     document.getElementById("pImageUrl").value = p.cover_image_url || "";
     document.getElementById("pFile").value = "";
+
+    // ✅ NEW
+    document.getElementById("pExtraImages").value =
+      Array.isArray(p.extra_images) ? p.extra_images.join("\n") : "";
   }
 
   function resetForm() {
@@ -82,6 +94,9 @@
     document.getElementById("pSort").value = "0";
     document.getElementById("pImageUrl").value = "";
     document.getElementById("pFile").value = "";
+
+    // ✅ NEW
+    if (document.getElementById("pExtraImages")) document.getElementById("pExtraImages").value = "";
   }
 
   async function fetchProjects() {
@@ -141,6 +156,7 @@
             </span>
             ${p.featured ? `<span style="color:#ff0080;font-size:12px;">★ featured</span>` : ""}
             <span style="color:#888;font-size:12px;">Sort: ${Number(p.sort_order || 0)}</span>
+            <span style="color:#888;font-size:12px;">Pics: ${(Array.isArray(p.extra_images) ? p.extra_images.length : 0)}</span>
           </div>
           <div style="color:#aaa;font-size:13px;margin-top:4px;">${esc(p.description || "")}</div>
         </div>
@@ -152,7 +168,7 @@
       </div>
     `).join("");
 
-    // ✅ Edit (FIX: compare as string)
+    // Edit
     listEl.querySelectorAll("button[data-edit]").forEach(btn => {
       btn.addEventListener("click", () => {
         const id = btn.getAttribute("data-edit");
@@ -218,9 +234,12 @@
       featured: f.featured,
       sort_order: f.sort_order,
       cover_image_url: f.cover_image_url,
+
+      // ✅ NEW
+      extra_images: f.extra_images,
     };
 
-    // ✅ Keep upload disabled to avoid Vercel 413
+    // keep upload disabled
     if (f.file) {
       return alert("Upload disabled (Vercel 413). Please use 'OR image URL' instead.");
     }
@@ -253,23 +272,17 @@
 
   cancelEditBtn?.addEventListener("click", resetForm);
 
-  // ✅ IMPORTANT: Load projects when Gallery tab opens AND when key changes
   adminKeyInput?.addEventListener("input", () => {
-    // don’t spam requests every keystroke; only if key length looks like real
     if ((adminKeyInput.value || "").trim().length > 10) fetchProjects();
   });
 
   window.addEventListener("GS_OPEN_GALLERY_TAB", () => {
-    // always try load when tab opens
     fetchProjects();
   });
 
-  // ✅ Also load if user refreshes while on Gallery tab
   window.addEventListener("DOMContentLoaded", () => {
-    // If adminKey exists in session, try to load immediately (safe)
     if (getAdminKey()) fetchProjects();
   });
 
-  // expose for quick debug in console
   window.__GS_fetchGalleryProjects = fetchProjects;
 })();
