@@ -9,6 +9,9 @@
   <link rel="stylesheet" href="/styles.css" />
 
   <style>
+    /* =========================
+       ✅ Project Modal
+    ========================= */
     .gs-modal{ position: fixed; inset:0; z-index: 9999; display:none; }
     .gs-modal.is-open{ display:block; }
 
@@ -61,6 +64,7 @@
     }
     .gs-modal-section:last-child{ border-bottom:none; }
 
+    /* ✅ Main image ABOVE description */
     .gs-modal-mainimg img{
       width:100%;
       height: 340px;
@@ -69,11 +73,13 @@
       border: 1px solid rgba(255,255,255,.10);
       background: rgba(255,255,255,.04);
       display:block;
+      cursor: zoom-in;
     }
     @media (max-width: 768px){
       .gs-modal-mainimg img{ height: 220px; }
     }
 
+    /* ✅ Extra images BELOW description */
     .gs-modal-gallery{
       display:grid;
       grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -87,8 +93,10 @@
       border: 1px solid rgba(255,255,255,.10);
       background: rgba(255,255,255,.04);
       display:block;
+      cursor: zoom-in;
     }
 
+    /* Buttons */
     .gs-btn-row{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
     .gs-btn{
       padding: 10px 14px;
@@ -110,7 +118,6 @@
       background: rgba(255,0,80,0.14);
       border-color: rgba(255,0,80,0.28);
     }
-    .gs-btn:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
 
     .gs-buy{
       display:flex;
@@ -125,6 +132,7 @@
       color: var(--accent-color, #00bcd4);
     }
 
+    /* Contact toggle */
     .gs-contact-wrap{ display:none; }
     .gs-contact-wrap.is-open{ display:block; }
 
@@ -140,6 +148,106 @@
       font-family: Poppins, sans-serif;
     }
     .gs-small-muted{ opacity:.75; font-size: .92rem; }
+
+    /* ✅ Better description layout */
+    .gs-desc-block{ display:grid; gap:10px; }
+    .gs-desc-meta{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+      opacity:.85; font-size:.92rem;
+    }
+    .gs-meta-pill{
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      font-size: .82rem;
+    }
+    .gs-desc-text{
+      margin: 0;
+      opacity: .9;
+      line-height: 1.55;
+      white-space: pre-line;
+    }
+    .gs-desc-tags{
+      display:flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .gs-desc-tag{
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,188,212,.10);
+      color: #fff;
+      font-size: .8rem;
+      opacity:.95;
+    }
+
+    /* =========================
+       ✅ Image Viewer Popup
+    ========================= */
+    .gs-imgview{
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: none;
+    }
+    .gs-imgview.is-open{ display:block; }
+
+    .gs-imgview-backdrop{
+      position:absolute;
+      inset:0;
+      background: rgba(0,0,0,.65);
+      backdrop-filter: blur(10px);
+    }
+
+    .gs-imgview-card{
+      position: relative;
+      width: min(1100px, 94vw);
+      margin: 6vh auto 0;
+      border-radius: 18px;
+      background: rgba(18,18,18,.92);
+      border: 1px solid rgba(255,255,255,.12);
+      padding: 12px;
+      box-shadow: 0 24px 80px rgba(0,0,0,.6);
+    }
+
+    .gs-imgview-close{
+      position:absolute;
+      top: 10px;
+      right: 10px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.08);
+      color:#fff;
+      border-radius: 12px;
+      padding: 8px 12px;
+      cursor:pointer;
+      font-weight: 800;
+    }
+
+    #gsImgFull{
+      width: 100%;
+      max-height: 75vh;
+      object-fit: contain;
+      border-radius: 14px;
+      display:block;
+      background: rgba(0,0,0,.35);
+    }
+
+    .gs-imgview-actions{
+      display:flex;
+      justify-content:flex-end;
+      padding-top: 10px;
+    }
+
+    .gs-imgview-link{
+      color: var(--accent-color, #00bcd4);
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .gs-imgview-link:hover{
+      color: var(--accent-color-alt, #ff0080);
+    }
   </style>
 </head>
 
@@ -153,7 +261,7 @@
         <a href="/index.html#services">Services</a>
         <a href="/gallery.html">Gallery</a>
         <a href="/index.html#contact">Contact</a>
-        <a href="#" id="cart-link">Cart</a>
+        <a href="#" id="cart-link">Cart (<span id="cart-count">0</span>)</a>
         <a href="/admin.html">Admin</a>
       </nav>
 
@@ -194,7 +302,7 @@
     </div>
   </footer>
 
-  <!-- ✅ Modal -->
+  <!-- ✅ Project Modal -->
   <div id="gsProjectModal" class="gs-modal" aria-hidden="true">
     <div class="gs-modal-backdrop" id="gsModalBackdrop"></div>
 
@@ -215,8 +323,9 @@
           <div id="gsModalMainImage" class="gs-modal-mainimg"></div>
         </div>
 
+        <!-- ✅ Description -->
         <div class="gs-modal-section" style="padding-top:0;">
-          <p id="gsModalDesc" style="margin:0;opacity:.85;">—</p>
+          <div id="gsModalDesc">—</div>
         </div>
 
         <!-- ✅ Extra images BELOW description -->
@@ -240,7 +349,7 @@
           </div>
         </div>
 
-        <!-- Contact form (hidden until Contact click) -->
+        <!-- Contact form -->
         <div class="gs-modal-section gs-contact-wrap" id="gsContactWrap">
           <h4 style="margin:0 0 6px;">Send your info</h4>
           <p class="gs-small-muted" style="margin:0 0 10px;">
@@ -278,21 +387,27 @@
     </div>
   </div>
 
+  <!-- ✅ Image Viewer Popup -->
+  <div id="gsImageViewer" class="gs-imgview" aria-hidden="true">
+    <div class="gs-imgview-backdrop" id="gsImgBackdrop"></div>
+
+    <div class="gs-imgview-card" role="dialog" aria-modal="true" aria-label="Image viewer">
+      <button id="gsImgClose" class="gs-imgview-close" type="button">✕</button>
+      <img id="gsImgFull" src="" alt="Project image" />
+      <div class="gs-imgview-actions">
+        <a id="gsImgOpenNew" class="gs-imgview-link" href="#" target="_blank" rel="noopener">Open in new tab</a>
+      </div>
+    </div>
+  </div>
+
   <!-- scripts -->
   <script src="/script.js"></script>
   <script src="/store-data.js"></script>
-
-  <!-- ✅ reCAPTCHA v3 -->
-  <script src="https://www.google.com/recaptcha/api.js?render=6Ld1z3QsAAAAAPTDv7VKZy9wYoqSUsoubaBKZ7Jw"></script>
-
-  <!-- ✅ Gallery renderer -->
   <script type="module" src="/gallery.js"></script>
 
-  <!-- ✅ ONE modal script (NO DUPLICATES) -->
+  <!-- ✅ ONLY ONE Modal Script -->
   <script>
   (() => {
-    const SITE_KEY = "6Ld1z3QsAAAAAPTDv7VKZy9wYoqSUsoubaBKZ7Jw";
-
     const modal = document.getElementById("gsProjectModal");
     const backdrop = document.getElementById("gsModalBackdrop");
     const closeX = document.getElementById("gsModalCloseX");
@@ -307,7 +422,6 @@
     const galleryEl = document.getElementById("gsModalGallery");
 
     const buyBtn = document.getElementById("gsModalBuyBtn");
-
     const contactBtn = document.getElementById("gsModalContactBtn");
     const contactWrap = document.getElementById("gsContactWrap");
     const hideContactBtn = document.getElementById("gsModalCloseContactBtn");
@@ -317,6 +431,13 @@
 
     const pidEl = document.getElementById("gsModalProductId");
     const ptitleEl = document.getElementById("gsModalProductTitle");
+
+    // Image viewer
+    const imgViewer = document.getElementById("gsImageViewer");
+    const imgBackdrop = document.getElementById("gsImgBackdrop");
+    const imgClose = document.getElementById("gsImgClose");
+    const imgFull = document.getElementById("gsImgFull");
+    const imgOpenNew = document.getElementById("gsImgOpenNew");
 
     function esc(s){
       return String(s ?? "")
@@ -329,6 +450,32 @@
       document.body.style.overflow = lock ? "hidden" : "";
     }
 
+    function normalizeExtraImages(value){
+      // supports: array OR "url1, url2" string
+      if (Array.isArray(value)) return value.filter(Boolean).map(String);
+      const s = String(value || "").trim();
+      if (!s) return [];
+      return s.split(",").map(x => x.trim()).filter(Boolean);
+    }
+
+    // ===== Image viewer =====
+    function openImageViewer(src){
+      if (!src) return;
+      imgFull.src = src;
+      imgOpenNew.href = src;
+      imgViewer.classList.add("is-open");
+      imgViewer.setAttribute("aria-hidden", "false");
+    }
+    function closeImageViewer(){
+      imgViewer.classList.remove("is-open");
+      imgViewer.setAttribute("aria-hidden", "true");
+      imgFull.src = "";
+      imgOpenNew.href = "#";
+    }
+    imgBackdrop.addEventListener("click", closeImageViewer);
+    imgClose.addEventListener("click", closeImageViewer);
+
+    // ===== Project modal =====
     function openModal(project){
       contactWrap.classList.remove("is-open");
       statusEl.textContent = "";
@@ -341,34 +488,75 @@
       const title = project.title || "Untitled";
       nameEl.textContent = title;
 
-      const cat = String(project.category || "other").toUpperCase();
-      const tags = Array.isArray(project.tags) ? project.tags.join(", ") : (project.tags || "");
-      metaEl.textContent = tags ? `${cat} • ${tags}` : cat;
+      const category = String(project.category || "other").toUpperCase();
 
-      const cover = project.cover_image_url || "/images/hero-image.png";
+      // tags supports array OR "a,b,c"
+      const tagsArr = Array.isArray(project.tags)
+        ? project.tags.filter(Boolean)
+        : String(project.tags || "").split(",").map(x => x.trim()).filter(Boolean);
+
+      metaEl.innerHTML = `
+        <span class="gs-meta-pill">${esc(category)}</span>
+        ${project.featured ? `<span class="gs-meta-pill">★ Featured</span>` : ``}
+      `;
+
+      // main image
+      const cover = project.cover_image_url || project.image || "/images/hero-image.png";
       mainImgEl.innerHTML = `
-        <img src="${esc(cover)}" alt="${esc(title)}"
+        <img class="gs-click-img"
+             data-full="${esc(cover)}"
+             src="${esc(cover)}"
+             alt="${esc(title)}"
              onerror="this.onerror=null;this.src='/images/hero-image.png';" />
       `;
 
-      descEl.textContent = project.description || project.desc || "";
+      // description (organized)
+      const descText = project.description || project.desc || "";
+      descEl.innerHTML = `
+        <div class="gs-desc-block">
+          <div class="gs-desc-meta">
+            <span class="gs-meta-pill">${esc(category)}</span>
+            ${project.price ? `<span class="gs-meta-pill">$${Number(project.price).toFixed(2)}</span>` : ``}
+          </div>
 
-      // ✅ extra images (array)
-      const extra = Array.isArray(project.extra_images) ? project.extra_images.filter(Boolean) : [];
-      galleryEl.innerHTML = extra.length
-        ? extra.map(src => `
-            <img src="${esc(src)}" alt="${esc(title)}"
+          <p class="gs-desc-text">${esc(descText)}</p>
+
+          ${
+            tagsArr.length
+              ? `<div class="gs-desc-tags">
+                   ${tagsArr.slice(0, 12).map(t => `<span class="gs-desc-tag">${esc(t)}</span>`).join("")}
+                 </div>`
+              : ``
+          }
+        </div>
+      `;
+
+      // extra images (supports extra_images OR images OR gallery_images)
+      const extra =
+        normalizeExtraImages(project.extra_images)
+        .concat(normalizeExtraImages(project.images))
+        .concat(normalizeExtraImages(project.gallery_images));
+
+      const uniq = Array.from(new Set(extra)).filter(Boolean);
+
+      galleryEl.innerHTML = uniq.length
+        ? uniq.map(src => `
+            <img class="gs-click-img"
+                 data-full="${esc(src)}"
+                 src="${esc(src)}"
+                 alt="${esc(title)}"
                  onerror="this.onerror=null;this.src='/images/hero-image.png';" />
           `).join("")
         : `<div class="gs-small-muted">No extra pictures.</div>`;
 
-      // price
+      // price label
       const priceText =
         (project.price === "" || project.price == null || isNaN(Number(project.price)))
           ? "—"
           : `$${Number(project.price).toFixed(2)}`;
       priceEl.textContent = priceText;
 
+      // contact hidden fields
       pidEl.value = project.id || "";
       ptitleEl.value = title;
 
@@ -393,19 +581,24 @@
       modal.classList.remove("is-open");
       modal.setAttribute("aria-hidden", "true");
       lockScroll(false);
+
       document.getElementById("gsModalContactForm")?.reset();
       contactWrap.classList.remove("is-open");
       statusEl.textContent = "";
       sendBtn.disabled = false;
+
+      closeImageViewer();
     }
 
-    // close handlers
     backdrop.addEventListener("click", closeModal);
     closeX.addEventListener("click", closeModal);
     closeBtn.addEventListener("click", closeModal);
 
+    // ESC closes modal or image viewer
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && modal.classList.contains("is-open")) closeModal();
+      if (e.key !== "Escape") return;
+      if (imgViewer.classList.contains("is-open")) return closeImageViewer();
+      if (modal.classList.contains("is-open")) return closeModal();
     });
 
     // contact toggle
@@ -415,11 +608,9 @@
         document.getElementById("gsModalYourName")?.focus();
       }
     });
-    hideContactBtn.addEventListener("click", () => {
-      contactWrap.classList.remove("is-open");
-    });
+    hideContactBtn.addEventListener("click", () => contactWrap.classList.remove("is-open"));
 
-    // ✅ open modal by clicking any card
+    // ✅ Open modal when clicking a card
     document.addEventListener("click", (e) => {
       const card = e.target.closest(".g-card");
       if (!card) return;
@@ -434,7 +625,16 @@
       openModal(project);
     });
 
-    // ✅ submit contact WITH reCAPTCHA v3 token
+    // ✅ Click any image inside modal to open image viewer
+    document.addEventListener("click", (e) => {
+      const img = e.target.closest(".gs-click-img");
+      if (!img) return;
+
+      const src = img.getAttribute("data-full") || img.getAttribute("src");
+      openImageViewer(src);
+    });
+
+    // submit contact (NO recaptcha here)
     document.getElementById("gsModalContactForm").addEventListener("submit", async (e) => {
       e.preventDefault();
 
@@ -443,26 +643,17 @@
         email: document.getElementById("gsModalYourEmail").value.trim(),
         message: document.getElementById("gsModalYourMessage").value.trim(),
         productId: pidEl.value,
-        productTitle: ptitleEl.value,
-        recaptchaToken: ""
+        productTitle: ptitleEl.value
       };
 
       if (!payload.name || !payload.email || !payload.message) {
         return alert("Please fill name, email, and message.");
       }
 
-      statusEl.textContent = "Verifying...";
+      statusEl.textContent = "Sending...";
       sendBtn.disabled = true;
 
       try {
-        if (!window.grecaptcha) throw new Error("reCAPTCHA not loaded yet.");
-
-        // ✅ v3 token
-        const token = await grecaptcha.execute(SITE_KEY, { action: "contact" });
-        payload.recaptchaToken = token;
-
-        statusEl.textContent = "Sending...";
-
         const res = await fetch("/api/contact", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -482,13 +673,9 @@
       } catch (err) {
         statusEl.textContent = "Failed";
         sendBtn.disabled = false;
-        alert("Error: " + err.message);
+        alert("Network error: " + err.message);
       }
     });
-
-    // debug
-    window.__GS_openModal = openModal;
-    window.__GS_closeModal = closeModal;
   })();
   </script>
 </body>
