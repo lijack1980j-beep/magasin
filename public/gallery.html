@@ -71,5 +71,66 @@
 
   <!-- Gallery page logic -->
   <script type="module" src="/gallery.js"></script>
+
+  <!-- ===== Project Details Popup (Gallery Modal) ===== -->
+<div id="gsProjectModal" class="gs-modal" style="display:none;">
+  <div class="gs-modal-backdrop" id="gsModalBackdrop"></div>
+
+  <div class="gs-modal-card" role="dialog" aria-modal="true" aria-labelledby="gsModalTitle">
+    <div class="gs-modal-head">
+      <h3 id="gsModalTitle" style="margin:0;">Project Details</h3>
+      <button id="gsModalCloseX" type="button" class="gs-modal-x">✕</button>
+    </div>
+
+    <div class="gs-modal-body">
+      <!-- Name + Description -->
+      <div class="gs-modal-section">
+        <h4 id="gsModalName" style="margin:0 0 6px;">—</h4>
+        <p id="gsModalDesc" style="margin:0;opacity:.85;">—</p>
+      </div>
+
+      <!-- Pictures -->
+      <div class="gs-modal-section">
+        <h4 style="margin:0 0 10px;">Pictures</h4>
+        <div id="gsModalGallery" class="gs-modal-gallery"></div>
+      </div>
+
+      <!-- Buy -->
+      <div class="gs-modal-section gs-modal-buy">
+        <div>
+          <div style="opacity:.85;font-size:14px;">Price</div>
+          <div id="gsModalPrice" style="font-weight:700;font-size:20px;">—</div>
+        </div>
+        <button id="gsModalBuyBtn" class="btn primary" type="button">Buy / Add to Cart</button>
+      </div>
+
+      <!-- Contact -->
+      <div class="gs-modal-section">
+        <h4 style="margin:0 0 10px;">Contact me</h4>
+
+        <form id="gsModalContactForm">
+          <input type="hidden" id="gsModalProductId" />
+          <input type="hidden" id="gsModalProductTitle" />
+
+          <label style="display:block;margin:10px 0 6px;">Your Name</label>
+          <input id="gsModalYourName" required placeholder="Full name" />
+
+          <label style="display:block;margin:10px 0 6px;">Email</label>
+          <input id="gsModalYourEmail" type="email" required placeholder="you@example.com" />
+
+          <label style="display:block;margin:10px 0 6px;">Message</label>
+          <textarea id="gsModalYourMessage" rows="4" placeholder="Tell me what you need..." required></textarea>
+
+          <div style="display:flex;gap:10px;align-items:center;margin-top:14px;">
+            <button id="gsModalSendBtn" class="btn primary" type="submit">Send</button>
+            <button id="gsModalCancelBtn" class="btn" type="button">Close</button>
+            <span id="gsModalStatus" style="margin-left:auto;opacity:.8;"></span>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+  
 </body>
 </html>
