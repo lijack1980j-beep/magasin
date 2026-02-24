@@ -527,5 +527,100 @@
     window.__GS_closeProjectModal = closeModal;
   })();
   </script>
+
+  <script>
+(() => {
+  const modal = document.getElementById("gsProjectModal");
+  const backdrop = document.getElementById("gsModalBackdrop");
+  const closeX = document.getElementById("gsModalCloseX");
+  const closeBtn = document.getElementById("gsModalCancelBtn");
+
+  const nameEl = document.getElementById("gsModalName");
+  const descEl = document.getElementById("gsModalDesc");
+  const priceEl = document.getElementById("gsModalPrice");
+  const mainImgEl = document.getElementById("gsModalMainImage");
+  const galleryEl = document.getElementById("gsModalGallery");
+
+  function lockScroll(lock){
+    document.body.style.overflow = lock ? "hidden" : "";
+  }
+
+  function openModal(project){
+    lockScroll(true);
+    modal.style.display = "block";
+
+    nameEl.textContent = project.title || "Untitled";
+    descEl.textContent = project.description || "";
+
+    const cover = project.cover_image_url || "/images/hero-image.png";
+    mainImgEl.innerHTML = `
+      <img src="${cover}"
+           style="width:100%;height:320px;object-fit:cover;border-radius:16px;"
+           onerror="this.onerror=null;this.src='/images/hero-image.png';" />
+    `;
+
+    const extra = Array.isArray(project.extra_images) ? project.extra_images : [];
+    galleryEl.innerHTML = extra.length
+      ? extra.map(src => `
+          <img src="${src}"
+               style="width:100%;height:140px;object-fit:cover;border-radius:12px;"
+               onerror="this.onerror=null;this.src='/images/hero-image.png';" />
+        `).join("")
+      : `<p style="opacity:.7;">No extra images.</p>`;
+
+    const priceText =
+      (project.price === "" || project.price == null || isNaN(Number(project.price)))
+        ? "—"
+        : "$" + Number(project.price).toFixed(2);
+    priceEl.textContent = priceText;
+  }
+
+  function closeModal(){
+    modal.style.display = "none";
+    lockScroll(false);
+  }
+
+  backdrop.addEventListener("click", closeModal);
+  closeX.addEventListener("click", closeModal);
+  closeBtn.addEventListener("click", closeModal);
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modal.style.display === "block") closeModal();
+  });
+
+  // ✅ Use state.projects from gallery.js (NO extra fetch)
+  document.addEventListener("click", (e) => {
+    const card = e.target.closest(".g-card");
+    if (!card) return;
+
+    const id = card.dataset.id;
+    if (!id) return;
+
+    const project = window.stateProjects
+      ? window.stateProjects.find(p => String(p.id) === String(id))
+      : null;
+
+    if (!project) {
+      console.warn("Project not found in state");
+      return;
+    }
+
+    openModal(project);
+  });
+
+  // expose state from gallery.js
+  window.stateProjects = null;
+
+  const observer = new MutationObserver(() => {
+    if (window.stateProjects === null && window.state) {
+      window.stateProjects = window.state.projects;
+    }
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
+
+})();
+</script>
+  
 </body>
 </html>
