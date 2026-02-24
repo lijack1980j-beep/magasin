@@ -68,9 +68,210 @@
   <!-- Your existing scripts -->
   <script src="/script.js"></script>
   <script src="/store-data.js"></script>
-
+  
   <!-- Gallery page logic -->
   <script type="module" src="/gallery.js"></script>
+
+  <script>
+/**
+ * Gallery Modal:
+ * - intercepts clicks on /project-detail.html?id=...
+ * - prevents 404 navigation
+ * - loads project info from /api/projects
+ * - opens a blur modal with details + buy + contact
+ */
+(() => {
+  const modal = document.getElementById("gsProjectModal");
+  const backdrop = document.getElementById("gsModalBackdrop");
+  const closeX = document.getElementById("gsModalCloseX");
+  const closeBtn = document.getElementById("gsModalCancelBtn");
+
+  const nameEl = document.getElementById("gsModalName");
+  const descEl = document.getElementById("gsModalDesc");
+  const priceEl = document.getElementById("gsModalPrice");
+  const galleryEl = document.getElementById("gsModalGallery");
+  const buyBtn = document.getElementById("gsModalBuyBtn");
+
+  const statusEl = document.getElementById("gsModalStatus");
+  const sendBtn = document.getElementById("gsModalSendBtn");
+
+  const pidEl = document.getElementById("gsModalProductId");
+  const ptitleEl = document.getElementById("gsModalProductTitle");
+
+  function esc(s){
+    return String(s ?? "")
+      .replaceAll("&","&amp;").replaceAll("<","&lt;")
+      .replaceAll(">","&gt;").replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function lockScroll(lock){
+    document.body.style.overflow = lock ? "hidden" : "";
+  }
+
+  function openModal(project){
+    if (!modal) return;
+
+    lockScroll(true);
+
+    const title = project.title || "Untitled";
+    nameEl.textContent = title;
+    descEl.textContent = project.description || project.desc || "";
+
+    // Gallery projects (Supabase) often don't have price -> show —
+    const priceText =
+      (project.price === "" || project.price == null || isNaN(Number(project.price)))
+        ? "—"
+        : `$${Number(project.price).toFixed(2)}`;
+    priceEl.textContent = priceText;
+
+    pidEl.value = project.id || "";
+    ptitleEl.value = title;
+
+    statusEl.textContent = "";
+    sendBtn.disabled = false;
+
+    // pictures:
+    // supports: project.images[] OR project.extra_images[] OR fallback cover_image_url
+    const imgs =
+      (Array.isArray(project.images) && project.images.length ? project.images :
+      (Array.isArray(project.extra_images) && project.extra_images.length ? project.extra_images : []));
+
+    const fallback = project.cover_image_url || project.image || "/images/hero-image.png";
+    const allImgs = imgs.length ? imgs : [fallback];
+
+    galleryEl.innerHTML = allImgs.map(src => `
+      <img src="${esc(src)}" alt="${esc(title)}"
+           onerror="this.onerror=null;this.src='/images/hero-image.png';" />
+    `).join("");
+
+    // Buy button:
+    // If your store/cart system exists, it adds to cart. Otherwise it just opens contact.
+    buyBtn.onclick = () => {
+      if (typeof window.addToCart === "function") {
+        window.addToCart({
+          id: String(project.id || ""),
+          title: title,
+          price: String(project.price ?? ""),
+          category: String(project.category || "")
+        });
+        if (typeof window.updateCartCount === "function") window.updateCartCount();
+        alert("Added to cart ✅");
+      } else {
+        // fallback: just focus contact
+        document.getElementById("gsModalYourMessage")?.focus();
+      }
+    };
+
+    modal.style.display = "block";
+  }
+
+  function closeModal(){
+    if (!modal) return;
+    modal.style.display = "none";
+    lockScroll(false);
+    document.getElementById("gsModalContactForm")?.reset();
+  }
+
+  // close handlers
+  backdrop?.addEventListener("click", closeModal);
+  closeX?.addEventListener("click", closeModal);
+  closeBtn?.addEventListener("click", closeModal);
+
+  // ESC close
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modal && modal.style.display === "block") closeModal();
+  });
+
+  // Also close if click outside the card (extra safe)
+  modal?.addEventListener("click", (e) => {
+    const card = e.target.closest(".gs-modal-card");
+    if (!card) closeModal();
+  });
+
+  async function fetchProjectById(id){
+    // pull list from your API endpoint (the same your gallery.js should use)
+    const res = await fetch("/api/projects", { cache: "no-store" });
+    const text = await res.text();
+
+    let json;
+    try { json = JSON.parse(text); } catch {
+      throw new Error(`API not JSON. HTTP ${res.status}: ${text.slice(0, 120)}`);
+    }
+
+    if (!res.ok || !json.ok) throw new Error(json.error || `HTTP ${res.status}`);
+
+    const list = json.projects || [];
+    return list.find(p => String(p.id) === String(id)) || null;
+  }
+
+  // Intercept the Details link: /project-detail.html?id=...
+  document.addEventListener("click", async (e) => {
+    const a = e.target.closest('a[href*="project-detail.html?id="]');
+    if (!a) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const url = new URL(a.href, location.origin);
+    const id = url.searchParams.get("id");
+    if (!id) return alert("Missing project id.");
+
+    try {
+      const p = await fetchProjectById(id);
+      if (!p) return alert("Project not found. (Check /api/projects)");
+      openModal(p);
+    } catch (err) {
+      alert("Modal load error: " + err.message);
+      console.error(err);
+    }
+  }, true);
+
+  // Submit contact form -> /api/contact (Gmail/Telegram comes from your API)
+  document.getElementById("gsModalContactForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const payload = {
+      name: document.getElementById("gsModalYourName").value.trim(),
+      email: document.getElementById("gsModalYourEmail").value.trim(),
+      message: document.getElementById("gsModalYourMessage").value.trim(),
+      productId: pidEl.value,
+      productTitle: ptitleEl.value
+    };
+
+    if (!payload.name || !payload.email || !payload.message) return;
+
+    statusEl.textContent = "Sending...";
+    sendBtn.disabled = true;
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || !json.ok) {
+        statusEl.textContent = "Failed";
+        sendBtn.disabled = false;
+        alert("Send failed: " + (json.error || "unknown"));
+        return;
+      }
+
+      statusEl.textContent = "Sent ✅";
+      alert("Message sent ✅");
+      closeModal();
+    } catch (err) {
+      statusEl.textContent = "Failed";
+      sendBtn.disabled = false;
+      alert("Network error: " + err.message);
+    }
+  });
+
+})();
+</script>
 
   <!-- ===== Project Details Popup (Gallery Modal) ===== -->
 <div id="gsProjectModal" class="gs-modal" style="display:none;">
