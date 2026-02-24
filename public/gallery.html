@@ -9,7 +9,6 @@
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <!-- Navbar (same structure as your index.html) -->
   <header class="navbar">
     <div class="container nav-container">
       <div class="logo"><a href="/index.html">Glitch&nbsp;Signal</a></div>
@@ -31,7 +30,6 @@
     </div>
   </header>
 
-  <!-- Hero -->
   <section class="gallery-hero">
     <div class="container">
       <h1 class="gallery-title">Project Gallery</h1>
@@ -51,7 +49,6 @@
     </div>
   </section>
 
-  <!-- Content -->
   <main class="gallery-main">
     <div class="container">
       <div id="galleryRoot"></div>
@@ -65,273 +62,234 @@
     </div>
   </footer>
 
-  <!-- Your existing scripts -->
+  <!-- ===== Project Details Popup (Gallery Modal) ===== -->
+  <div id="gsProjectModal" class="gs-modal" style="display:none;">
+    <div class="gs-modal-backdrop" id="gsModalBackdrop"></div>
+
+    <div class="gs-modal-card" role="dialog" aria-modal="true" aria-labelledby="gsModalTitle">
+      <div class="gs-modal-head">
+        <h3 id="gsModalTitle" style="margin:0;">Project Details</h3>
+        <button id="gsModalCloseX" type="button" class="gs-modal-x">✕</button>
+      </div>
+
+      <div class="gs-modal-body">
+        <div class="gs-modal-section">
+          <h4 id="gsModalName" style="margin:0 0 6px;">—</h4>
+          <p id="gsModalDesc" style="margin:0;opacity:.85;">—</p>
+        </div>
+
+        <div class="gs-modal-section">
+          <h4 style="margin:0 0 10px;">Pictures</h4>
+          <div id="gsModalGallery" class="gs-modal-gallery"></div>
+        </div>
+
+        <div class="gs-modal-section gs-modal-buy">
+          <div>
+            <div style="opacity:.85;font-size:14px;">Price</div>
+            <div id="gsModalPrice" style="font-weight:700;font-size:20px;">—</div>
+          </div>
+          <button id="gsModalBuyBtn" class="btn primary" type="button">Buy / Add to Cart</button>
+        </div>
+
+        <div class="gs-modal-section">
+          <h4 style="margin:0 0 10px;">Contact me</h4>
+
+          <form id="gsModalContactForm">
+            <input type="hidden" id="gsModalProductId" />
+            <input type="hidden" id="gsModalProductTitle" />
+
+            <label style="display:block;margin:10px 0 6px;">Your Name</label>
+            <input id="gsModalYourName" required placeholder="Full name" />
+
+            <label style="display:block;margin:10px 0 6px;">Email</label>
+            <input id="gsModalYourEmail" type="email" required placeholder="you@example.com" />
+
+            <label style="display:block;margin:10px 0 6px;">Message</label>
+            <textarea id="gsModalYourMessage" rows="4" placeholder="Tell me what you need..." required></textarea>
+
+            <div style="display:flex;gap:10px;align-items:center;margin-top:14px;">
+              <button id="gsModalSendBtn" class="btn primary" type="submit">Send</button>
+              <button id="gsModalCancelBtn" class="btn" type="button">Close</button>
+              <span id="gsModalStatus" style="margin-left:auto;opacity:.8;"></span>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Existing scripts -->
   <script src="/script.js"></script>
   <script src="/store-data.js"></script>
-  
-  <!-- Gallery page logic -->
   <script type="module" src="/gallery.js"></script>
 
+  <!-- ===== Modal JS (must be AFTER modal HTML) ===== -->
   <script>
-/**
- * Gallery Modal:
- * - intercepts clicks on /project-detail.html?id=...
- * - prevents 404 navigation
- * - loads project info from /api/projects
- * - opens a blur modal with details + buy + contact
- */
-(() => {
-  const modal = document.getElementById("gsProjectModal");
-  const backdrop = document.getElementById("gsModalBackdrop");
-  const closeX = document.getElementById("gsModalCloseX");
-  const closeBtn = document.getElementById("gsModalCancelBtn");
+  (() => {
+    const modal = document.getElementById("gsProjectModal");
+    const backdrop = document.getElementById("gsModalBackdrop");
+    const closeX = document.getElementById("gsModalCloseX");
+    const closeBtn = document.getElementById("gsModalCancelBtn");
 
-  const nameEl = document.getElementById("gsModalName");
-  const descEl = document.getElementById("gsModalDesc");
-  const priceEl = document.getElementById("gsModalPrice");
-  const galleryEl = document.getElementById("gsModalGallery");
-  const buyBtn = document.getElementById("gsModalBuyBtn");
+    const nameEl = document.getElementById("gsModalName");
+    const descEl = document.getElementById("gsModalDesc");
+    const priceEl = document.getElementById("gsModalPrice");
+    const galleryEl = document.getElementById("gsModalGallery");
+    const buyBtn = document.getElementById("gsModalBuyBtn");
 
-  const statusEl = document.getElementById("gsModalStatus");
-  const sendBtn = document.getElementById("gsModalSendBtn");
+    const statusEl = document.getElementById("gsModalStatus");
+    const sendBtn = document.getElementById("gsModalSendBtn");
 
-  const pidEl = document.getElementById("gsModalProductId");
-  const ptitleEl = document.getElementById("gsModalProductTitle");
+    const pidEl = document.getElementById("gsModalProductId");
+    const ptitleEl = document.getElementById("gsModalProductTitle");
 
-  function esc(s){
-    return String(s ?? "")
-      .replaceAll("&","&amp;").replaceAll("<","&lt;")
-      .replaceAll(">","&gt;").replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
-  }
+    function esc(s){
+      return String(s ?? "")
+        .replaceAll("&","&amp;").replaceAll("<","&lt;")
+        .replaceAll(">","&gt;").replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
 
-  function lockScroll(lock){
-    document.body.style.overflow = lock ? "hidden" : "";
-  }
+    function lockScroll(lock){
+      document.body.style.overflow = lock ? "hidden" : "";
+    }
 
-  function openModal(project){
-    if (!modal) return;
+    function openModal(project){
+      lockScroll(true);
 
-    lockScroll(true);
+      const title = project.title || "Untitled";
+      nameEl.textContent = title;
+      descEl.textContent = project.description || "";
 
-    const title = project.title || "Untitled";
-    nameEl.textContent = title;
-    descEl.textContent = project.description || project.desc || "";
+      const priceText =
+        (project.price === "" || project.price == null || isNaN(Number(project.price)))
+          ? "—"
+          : `$${Number(project.price).toFixed(2)}`;
+      priceEl.textContent = priceText;
 
-    // Gallery projects (Supabase) often don't have price -> show —
-    const priceText =
-      (project.price === "" || project.price == null || isNaN(Number(project.price)))
-        ? "—"
-        : `$${Number(project.price).toFixed(2)}`;
-    priceEl.textContent = priceText;
+      pidEl.value = project.id || "";
+      ptitleEl.value = title;
 
-    pidEl.value = project.id || "";
-    ptitleEl.value = title;
+      statusEl.textContent = "";
+      sendBtn.disabled = false;
 
-    statusEl.textContent = "";
-    sendBtn.disabled = false;
+      const fallback = project.cover_image_url || "/images/hero-image.png";
+      galleryEl.innerHTML = `
+        <img src="${esc(fallback)}" alt="${esc(title)}"
+             onerror="this.onerror=null;this.src='/images/hero-image.png';" />
+      `;
 
-    // pictures:
-    // supports: project.images[] OR project.extra_images[] OR fallback cover_image_url
-    const imgs =
-      (Array.isArray(project.images) && project.images.length ? project.images :
-      (Array.isArray(project.extra_images) && project.extra_images.length ? project.extra_images : []));
+      buyBtn.onclick = () => {
+        if (typeof window.addToCart === "function") {
+          window.addToCart({
+            id: String(project.id || ""),
+            title: title,
+            price: String(project.price ?? ""),
+            category: String(project.category || "")
+          });
+          if (typeof window.updateCartCount === "function") window.updateCartCount();
+          alert("Added to cart ✅");
+        } else {
+          document.getElementById("gsModalYourMessage")?.focus();
+        }
+      };
 
-    const fallback = project.cover_image_url || project.image || "/images/hero-image.png";
-    const allImgs = imgs.length ? imgs : [fallback];
+      modal.style.display = "block";
+    }
 
-    galleryEl.innerHTML = allImgs.map(src => `
-      <img src="${esc(src)}" alt="${esc(title)}"
-           onerror="this.onerror=null;this.src='/images/hero-image.png';" />
-    `).join("");
+    function closeModal(){
+      modal.style.display = "none";
+      lockScroll(false);
+      document.getElementById("gsModalContactForm")?.reset();
+    }
 
-    // Buy button:
-    // If your store/cart system exists, it adds to cart. Otherwise it just opens contact.
-    buyBtn.onclick = () => {
-      if (typeof window.addToCart === "function") {
-        window.addToCart({
-          id: String(project.id || ""),
-          title: title,
-          price: String(project.price ?? ""),
-          category: String(project.category || "")
-        });
-        if (typeof window.updateCartCount === "function") window.updateCartCount();
-        alert("Added to cart ✅");
-      } else {
-        // fallback: just focus contact
-        document.getElementById("gsModalYourMessage")?.focus();
+    backdrop.addEventListener("click", closeModal);
+    closeX.addEventListener("click", closeModal);
+    closeBtn.addEventListener("click", closeModal);
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && modal.style.display === "block") closeModal();
+    });
+
+    // ✅ intercept clicks on cards OR on project-detail link
+    document.addEventListener("click", async (e) => {
+      const link = e.target.closest('a[href*="project-detail.html?id="]');
+      const card = e.target.closest(".g-card");
+
+      if (!link && !card) return;
+
+      // if they clicked link, prevent 404
+      if (link) {
+        e.preventDefault();
+        e.stopPropagation();
       }
-    };
 
-    modal.style.display = "block";
-  }
+      // Find id from link param if exists
+      let id = null;
+      if (link) {
+        const url = new URL(link.href, location.origin);
+        id = url.searchParams.get("id");
+      }
 
-  function closeModal(){
-    if (!modal) return;
-    modal.style.display = "none";
-    lockScroll(false);
-    document.getElementById("gsModalContactForm")?.reset();
-  }
+      // If your gallery cards don't have id, fallback: use title matching
+      // (Better: add data-id to card in gallery.js)
+      const res = await fetch("/api/projects", { cache: "no-store" });
+      const json = await res.json().catch(() => null);
 
-  // close handlers
-  backdrop?.addEventListener("click", closeModal);
-  closeX?.addEventListener("click", closeModal);
-  closeBtn?.addEventListener("click", closeModal);
+      if (!json || !json.ok) return alert("Cannot load /api/projects");
 
-  // ESC close
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && modal && modal.style.display === "block") closeModal();
-  });
+      const list = json.projects || [];
 
-  // Also close if click outside the card (extra safe)
-  modal?.addEventListener("click", (e) => {
-    const card = e.target.closest(".gs-modal-card");
-    if (!card) closeModal();
-  });
+      let p = null;
+      if (id) {
+        p = list.find(x => String(x.id) === String(id));
+      } else {
+        // fallback by title from card
+        const h = card?.querySelector(".g-title")?.textContent?.trim() || "";
+        p = list.find(x => (x.title || "").trim() === h) || null;
+      }
 
-  async function fetchProjectById(id){
-    // pull list from your API endpoint (the same your gallery.js should use)
-    const res = await fetch("/api/projects", { cache: "no-store" });
-    const text = await res.text();
-
-    let json;
-    try { json = JSON.parse(text); } catch {
-      throw new Error(`API not JSON. HTTP ${res.status}: ${text.slice(0, 120)}`);
-    }
-
-    if (!res.ok || !json.ok) throw new Error(json.error || `HTTP ${res.status}`);
-
-    const list = json.projects || [];
-    return list.find(p => String(p.id) === String(id)) || null;
-  }
-
-  // Intercept the Details link: /project-detail.html?id=...
-  document.addEventListener("click", async (e) => {
-    const a = e.target.closest('a[href*="project-detail.html?id="]');
-    if (!a) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    const url = new URL(a.href, location.origin);
-    const id = url.searchParams.get("id");
-    if (!id) return alert("Missing project id.");
-
-    try {
-      const p = await fetchProjectById(id);
-      if (!p) return alert("Project not found. (Check /api/projects)");
+      if (!p) return alert("Project not found.");
       openModal(p);
-    } catch (err) {
-      alert("Modal load error: " + err.message);
-      console.error(err);
-    }
-  }, true);
+    }, true);
 
-  // Submit contact form -> /api/contact (Gmail/Telegram comes from your API)
-  document.getElementById("gsModalContactForm")?.addEventListener("submit", async (e) => {
-    e.preventDefault();
+    // submit contact
+    document.getElementById("gsModalContactForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-    const payload = {
-      name: document.getElementById("gsModalYourName").value.trim(),
-      email: document.getElementById("gsModalYourEmail").value.trim(),
-      message: document.getElementById("gsModalYourMessage").value.trim(),
-      productId: pidEl.value,
-      productTitle: ptitleEl.value
-    };
+      const payload = {
+        name: document.getElementById("gsModalYourName").value.trim(),
+        email: document.getElementById("gsModalYourEmail").value.trim(),
+        message: document.getElementById("gsModalYourMessage").value.trim(),
+        productId: pidEl.value,
+        productTitle: ptitleEl.value
+      };
 
-    if (!payload.name || !payload.email || !payload.message) return;
+      if (!payload.name || !payload.email || !payload.message) return;
 
-    statusEl.textContent = "Sending...";
-    sendBtn.disabled = true;
+      statusEl.textContent = "Sending...";
+      sendBtn.disabled = true;
 
-    try {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
 
-      const json = await res.json().catch(() => ({}));
-
-      if (!res.ok || !json.ok) {
+      const out = await res.json().catch(() => ({}));
+      if (!res.ok || !out.ok) {
         statusEl.textContent = "Failed";
         sendBtn.disabled = false;
-        alert("Send failed: " + (json.error || "unknown"));
-        return;
+        return alert("Send failed: " + (out.error || "unknown"));
       }
 
       statusEl.textContent = "Sent ✅";
       alert("Message sent ✅");
       closeModal();
-    } catch (err) {
-      statusEl.textContent = "Failed";
-      sendBtn.disabled = false;
-      alert("Network error: " + err.message);
-    }
-  });
+    });
 
-})();
-</script>
+  })();
+  </script>
 
-  <!-- ===== Project Details Popup (Gallery Modal) ===== -->
-<div id="gsProjectModal" class="gs-modal" style="display:none;">
-  <div class="gs-modal-backdrop" id="gsModalBackdrop"></div>
-
-  <div class="gs-modal-card" role="dialog" aria-modal="true" aria-labelledby="gsModalTitle">
-    <div class="gs-modal-head">
-      <h3 id="gsModalTitle" style="margin:0;">Project Details</h3>
-      <button id="gsModalCloseX" type="button" class="gs-modal-x">✕</button>
-    </div>
-
-    <div class="gs-modal-body">
-      <!-- Name + Description -->
-      <div class="gs-modal-section">
-        <h4 id="gsModalName" style="margin:0 0 6px;">—</h4>
-        <p id="gsModalDesc" style="margin:0;opacity:.85;">—</p>
-      </div>
-
-      <!-- Pictures -->
-      <div class="gs-modal-section">
-        <h4 style="margin:0 0 10px;">Pictures</h4>
-        <div id="gsModalGallery" class="gs-modal-gallery"></div>
-      </div>
-
-      <!-- Buy -->
-      <div class="gs-modal-section gs-modal-buy">
-        <div>
-          <div style="opacity:.85;font-size:14px;">Price</div>
-          <div id="gsModalPrice" style="font-weight:700;font-size:20px;">—</div>
-        </div>
-        <button id="gsModalBuyBtn" class="btn primary" type="button">Buy / Add to Cart</button>
-      </div>
-
-      <!-- Contact -->
-      <div class="gs-modal-section">
-        <h4 style="margin:0 0 10px;">Contact me</h4>
-
-        <form id="gsModalContactForm">
-          <input type="hidden" id="gsModalProductId" />
-          <input type="hidden" id="gsModalProductTitle" />
-
-          <label style="display:block;margin:10px 0 6px;">Your Name</label>
-          <input id="gsModalYourName" required placeholder="Full name" />
-
-          <label style="display:block;margin:10px 0 6px;">Email</label>
-          <input id="gsModalYourEmail" type="email" required placeholder="you@example.com" />
-
-          <label style="display:block;margin:10px 0 6px;">Message</label>
-          <textarea id="gsModalYourMessage" rows="4" placeholder="Tell me what you need..." required></textarea>
-
-          <div style="display:flex;gap:10px;align-items:center;margin-top:14px;">
-            <button id="gsModalSendBtn" class="btn primary" type="submit">Send</button>
-            <button id="gsModalCancelBtn" class="btn" type="button">Close</button>
-            <span id="gsModalStatus" style="margin-left:auto;opacity:.8;"></span>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-  
 </body>
 </html>
