@@ -58,6 +58,36 @@ function getDefaultImage(cat) {
   return CATEGORY_DEFAULT_IMAGE[cat] || CATEGORY_DEFAULT_IMAGE.other;
 }
 
+/**
+ * ✅ extra_images may arrive as:
+ * - array: ["url1","url2"]
+ * - string CSV: "url1, url2"
+ * - string JSON: '["url1","url2"]'
+ * We'll normalize to array.
+ */
+function normalizeExtraImages(v) {
+  if (!v) return [];
+  if (Array.isArray(v)) return v.filter(Boolean).map(String);
+
+  if (typeof v === "string") {
+    const s = v.trim();
+    if (!s) return [];
+
+    // JSON array string
+    if ((s.startsWith("[") && s.endsWith("]")) || (s.startsWith("{") && s.endsWith("}"))) {
+      try {
+        const parsed = JSON.parse(s);
+        if (Array.isArray(parsed)) return parsed.filter(Boolean).map(String);
+      } catch {}
+    }
+
+    // CSV string
+    return s.split(",").map(x => x.trim()).filter(Boolean);
+  }
+
+  return [];
+}
+
 // ✅ read category from URL: /gallery.html?cat=uiux
 {
   const params = new URLSearchParams(window.location.search);
@@ -229,10 +259,13 @@ async function loadProjects() {
 
     state.projects = (json.projects || []).map(p => ({
       ...p,
+      id: p.id,
       category: normalizeCategory(p.category),
-      tags: Array.isArray(p.tags) ? p.tags : [],
+      tags: Array.isArray(p.tags) ? p.tags : (typeof p.tags === "string" ? p.tags.split(",").map(x=>x.trim()).filter(Boolean) : []),
       stars_count: Number(p.stars_count || 0),
-      extra_images: Array.isArray(p.extra_images) ? p.extra_images : [], // for popup
+
+      // ✅ VERY IMPORTANT: normalize extra images so modal will show URLs
+      extra_images: normalizeExtraImages(p.extra_images),
     }));
 
     if (statusEl) statusEl.textContent = state.projects.length ? "" : "No projects found yet.";
