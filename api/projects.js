@@ -14,7 +14,7 @@ module.exports = async (req, res) => {
 
     let q = supabase
       .from("projects")
-      .select("id,title,description,category,tags,cover_image_url,repo_url,live_url,featured,sort_order,created_at")
+      .select("id,title,description,category,tags,cover_image_url,extra_images,repo_url,live_url,featured,sort_order,created_at")
       .order("featured", { ascending: false })
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false });
