@@ -425,6 +425,58 @@
 
     // submit contact
     document.getElementById("gsModalContactForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const payload = {
+    name: document.getElementById("gsModalYourName").value.trim(),
+    email: document.getElementById("gsModalYourEmail").value.trim(),
+    message: document.getElementById("gsModalYourMessage").value.trim(),
+    productId: pidEl.value,
+    productTitle: ptitleEl.value
+  };
+
+  if (!payload.name || !payload.email || !payload.message) {
+    return alert("Please fill name, email, and message.");
+  }
+
+  statusEl.textContent = "Verifying...";
+  sendBtn.disabled = true;
+
+  try {
+    // ✅ Execute reCAPTCHA v3
+    const token = await grecaptcha.execute(
+      "6Ld1z3QsAAAAAPTDv7VKZy9wYoqSUsoubaBKZ7Jw",
+      { action: "contact" }
+    );
+
+    payload.recaptchaToken = token;
+
+    statusEl.textContent = "Sending...";
+
+    const res = await fetch("/api/contact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const out = await res.json().catch(() => ({}));
+
+    if (!res.ok || !out.ok) {
+      statusEl.textContent = "Failed";
+      sendBtn.disabled = false;
+      return alert("Send failed: " + (out.error || "unknown"));
+    }
+
+    statusEl.textContent = "Sent ✅";
+    alert("Message sent successfully ✅");
+    closeModal();
+
+  } catch (err) {
+    statusEl.textContent = "Failed";
+    sendBtn.disabled = false;
+    alert("Error: " + err.message);
+  }
+});
       e.preventDefault();
 
       const payload = {
