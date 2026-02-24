@@ -7,8 +7,152 @@
 
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
+
+  <!-- ✅ Extra popup styling (keeps your theme) -->
+  <style>
+    /* ===== Modal base ===== */
+    .gs-modal{ position: fixed; inset:0; z-index: 9999; display:none; }
+    .gs-modal.is-open{ display:block; }
+
+    .gs-modal-backdrop{
+      position:absolute; inset:0;
+      background: rgba(0,0,0,.45);
+      backdrop-filter: blur(10px);
+    }
+
+    .gs-modal-card{
+      position: relative;
+      width: min(920px, 94vw);
+      margin: 5vh auto 0;
+      background: rgba(18,18,18,.92);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 18px;
+      padding: 16px;
+      color:#fff;
+      max-height: 90vh;
+      overflow: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    }
+
+    .gs-modal-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+
+    .gs-modal-x{
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.06);
+      color:#fff;
+      border-radius: 10px;
+      padding: 8px 12px;
+      cursor:pointer;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .gs-modal-x:hover{ border-color: rgba(0,188,212,.5); }
+
+    .gs-modal-body{ padding-top: 12px; }
+
+    .gs-modal-section{
+      padding: 14px 0;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .gs-modal-section:last-child{ border-bottom:none; }
+
+    /* ✅ Main image above description */
+    .gs-modal-mainimg img{
+      width:100%;
+      height: 340px;
+      object-fit: cover;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      display:block;
+    }
+    @media (max-width: 768px){
+      .gs-modal-mainimg img{ height: 220px; }
+    }
+
+    /* ✅ Extra pictures below description */
+    .gs-modal-gallery{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+    }
+    .gs-modal-gallery img{
+      width:100%;
+      height:140px;
+      object-fit: cover;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      display:block;
+    }
+
+    /* Buttons (nice look) */
+    .gs-btn-row{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    .gs-btn{
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color:#fff;
+      cursor:pointer;
+      font-weight: 600;
+      font-family: Poppins, sans-serif;
+      transition: transform .15s ease, border-color .15s ease, background .15s ease;
+    }
+    .gs-btn:hover{ transform: translateY(-1px); border-color: rgba(0,188,212,.45); }
+    .gs-btn.primary{
+      background: rgba(0,188,212,0.14);
+      border-color: rgba(0,188,212,0.30);
+    }
+    .gs-btn.danger{
+      background: rgba(255,0,80,0.14);
+      border-color: rgba(255,0,80,0.28);
+    }
+    .gs-btn:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
+
+    .gs-buy{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .gs-price{
+      font-weight: 800;
+      font-size: 22px;
+      color: var(--accent-color, #00bcd4);
+    }
+
+    /* ✅ Contact form hidden until clicking Contact button */
+    .gs-contact-wrap{ display:none; }
+    .gs-contact-wrap.is-open{ display:block; }
+
+    .gs-field label{ display:block; margin: 10px 0 6px; opacity:.9; font-size:.95rem; }
+    .gs-field input, .gs-field textarea{
+      width:100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.25);
+      color:#fff;
+      outline:none;
+      font-family: Poppins, sans-serif;
+    }
+
+    .gs-small-muted{ opacity:.75; font-size: .92rem; }
+
+  </style>
 </head>
+
 <body>
+  <!-- Navbar -->
   <header class="navbar">
     <div class="container nav-container">
       <div class="logo"><a href="/index.html">Glitch&nbsp;Signal</a></div>
@@ -30,6 +174,7 @@
     </div>
   </header>
 
+  <!-- Hero -->
   <section class="gallery-hero">
     <div class="container">
       <h1 class="gallery-title">Project Gallery</h1>
@@ -37,6 +182,7 @@
 
       <div class="gallery-controls">
         <input id="searchInput" class="gallery-search" type="search" placeholder="Search projects (title, tags, description)..." />
+
         <select id="sortSelect" class="gallery-sort">
           <option value="new">Newest</option>
           <option value="stars">Most stars</option>
@@ -48,6 +194,7 @@
     </div>
   </section>
 
+  <!-- Content -->
   <main class="gallery-main">
     <div class="container">
       <div id="galleryRoot"></div>
@@ -61,186 +208,133 @@
     </div>
   </footer>
 
-  <!-- ======================================================
-       1) PROJECT DETAILS MODAL (NO CONTACT FORM INSIDE)
-  ======================================================= -->
-  <div id="gsProjectModal" class="gs-modal" style="display:none;">
+  <!-- ===============================
+       ✅ Project Details Popup (Modal)
+       Main image ABOVE description
+       Extra images BELOW description
+       Contact form shows ONLY when clicking Contact button
+  ================================ -->
+  <div id="gsProjectModal" class="gs-modal" aria-hidden="true">
     <div class="gs-modal-backdrop" id="gsModalBackdrop"></div>
 
-    <div class="gs-modal-card gs-modal-card--big" role="dialog" aria-modal="true" aria-labelledby="gsModalTitle">
+    <div class="gs-modal-card" role="dialog" aria-modal="true" aria-labelledby="gsModalTitle">
       <div class="gs-modal-head">
         <h3 id="gsModalTitle" style="margin:0;">Project Details</h3>
         <button id="gsModalCloseX" type="button" class="gs-modal-x">✕</button>
       </div>
 
       <div class="gs-modal-body">
-        <!-- Name + Description -->
-        <div class="gs-modal-section">
-          <h4 id="gsModalName" style="margin:0 0 6px;">—</h4>
+
+        <!-- Title -->
+        <div class="gs-modal-section" style="padding-top:0;">
+          <h2 id="gsModalName" style="margin:0 0 6px; font-size: 1.4rem;">—</h2>
+          <div class="gs-small-muted" id="gsModalMeta">—</div>
+        </div>
+
+        <!-- ✅ Main Image (ABOVE description) -->
+        <div class="gs-modal-section" style="padding-top:0;">
+          <div id="gsModalMainImage" class="gs-modal-mainimg"></div>
+        </div>
+
+        <!-- ✅ Description (below main image) -->
+        <div class="gs-modal-section" style="padding-top:0;">
           <p id="gsModalDesc" style="margin:0;opacity:.85;">—</p>
         </div>
 
-        <!-- Pictures -->
+        <!-- ✅ Extra images (below description) -->
         <div class="gs-modal-section">
-          <h4 style="margin:0 0 10px;">Pictures</h4>
+          <h4 style="margin:0 0 10px;">More Pictures</h4>
           <div id="gsModalGallery" class="gs-modal-gallery"></div>
         </div>
 
-        <!-- Buy -->
-        <div class="gs-modal-section gs-modal-buy">
-          <div>
-            <div style="opacity:.85;font-size:14px;">Price</div>
-            <div id="gsModalPrice" style="font-weight:700;font-size:20px;">—</div>
-          </div>
+        <!-- Buy + buttons -->
+        <div class="gs-modal-section">
+          <div class="gs-buy">
+            <div>
+              <div class="gs-small-muted">Price</div>
+              <div id="gsModalPrice" class="gs-price">—</div>
+            </div>
 
-          <div style="display:flex; gap:10px; align-items:center;">
-            <button id="gsModalBuyBtn" class="gs-btn gs-btn--primary" type="button">Buy / Add to Cart</button>
-            <button id="gsOpenContactBtn" class="gs-btn gs-btn--ghost" type="button">Contact</button>
+            <div class="gs-btn-row">
+              <button id="gsModalBuyBtn" class="gs-btn primary" type="button">Buy / Add to Cart</button>
+              <button id="gsModalContactBtn" class="gs-btn" type="button">Contact</button>
+              <button id="gsModalCancelBtn" class="gs-btn danger" type="button">Close</button>
+            </div>
           </div>
         </div>
 
-        <div class="gs-modal-section" style="display:flex; justify-content:flex-end;">
-          <button id="gsModalCancelBtn" class="gs-btn gs-btn--ghost" type="button">Close</button>
+        <!-- ✅ Contact form hidden, opens when clicking Contact button -->
+        <div class="gs-modal-section gs-contact-wrap" id="gsContactWrap">
+          <h4 style="margin:0 0 6px;">Send your info</h4>
+          <p class="gs-small-muted" style="margin:0 0 10px;">
+            Fill the form and I will receive it in Gmail/Telegram (via /api/contact).
+          </p>
+
+          <form id="gsModalContactForm">
+            <input type="hidden" id="gsModalProductId" />
+            <input type="hidden" id="gsModalProductTitle" />
+
+            <div class="gs-field">
+              <label for="gsModalYourName">Your Name</label>
+              <input id="gsModalYourName" required placeholder="Full name" />
+            </div>
+
+            <div class="gs-field">
+              <label for="gsModalYourEmail">Email</label>
+              <input id="gsModalYourEmail" type="email" required placeholder="you@example.com" />
+            </div>
+
+            <div class="gs-field">
+              <label for="gsModalYourMessage">Message</label>
+              <textarea id="gsModalYourMessage" rows="4" required placeholder="Tell me what you need..."></textarea>
+            </div>
+
+            <div class="gs-btn-row" style="margin-top:12px;">
+              <button id="gsModalSendBtn" class="gs-btn primary" type="submit">Send</button>
+              <button id="gsModalCloseContactBtn" class="gs-btn" type="button">Hide Form</button>
+              <span id="gsModalStatus" class="gs-small-muted" style="margin-left:auto;"></span>
+            </div>
+          </form>
         </div>
 
       </div>
     </div>
   </div>
-
-  <!-- ======================================================
-       2) CONTACT FORM MODAL (OPENS WHEN CLICK CONTACT BUTTON)
-  ======================================================= -->
-  <div id="gsContactModal" class="gs-modal" style="display:none;">
-    <div class="gs-modal-backdrop" id="gsContactBackdrop"></div>
-
-    <div class="gs-modal-card" role="dialog" aria-modal="true" aria-labelledby="gsContactTitle" style="width:min(620px, 94vw);">
-      <div class="gs-modal-head">
-        <h3 id="gsContactTitle" style="margin:0;">Send Message</h3>
-        <button id="gsContactCloseX" type="button" class="gs-modal-x">✕</button>
-      </div>
-
-      <div class="gs-modal-body" style="padding-top:12px;">
-        <form id="gsContactForm">
-          <input type="hidden" id="gsContactProductId" />
-          <input type="hidden" id="gsContactProductTitle" />
-
-          <label class="gs-label">Your Name</label>
-          <input class="gs-input" id="gsContactName" required placeholder="Full name" />
-
-          <label class="gs-label">Email</label>
-          <input class="gs-input" id="gsContactEmail" type="email" required placeholder="you@example.com" />
-
-          <label class="gs-label">Message</label>
-          <textarea class="gs-input" id="gsContactMessage" rows="4" required placeholder="Tell me what you need..."></textarea>
-
-          <div class="gs-form-actions">
-            <button id="gsContactSendBtn" class="gs-btn gs-btn--primary" type="submit">Send</button>
-            <button id="gsContactCloseBtn" class="gs-btn gs-btn--ghost" type="button">Close</button>
-            <span id="gsContactStatus" style="margin-left:auto;opacity:.8;"></span>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- ======================================================
-       UI STYLES (POPUP LOOK + BUTTONS)
-       (You can move to styles.css later)
-  ======================================================= -->
-  <style>
-    .gs-btn{
-      padding: 10px 14px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.14);
-      background: rgba(255,255,255,0.06);
-      color: #fff;
-      cursor: pointer;
-      font-weight: 700;
-      font-family: Poppins, sans-serif;
-      transition: transform .15s ease, background .15s ease, border-color .15s ease, opacity .15s ease;
-    }
-    .gs-btn:hover{
-      transform: translateY(-1px);
-      border-color: rgba(255,255,255,0.22);
-      background: rgba(255,255,255,0.09);
-    }
-    .gs-btn--primary{
-      background: rgba(0,188,212,0.18);
-      border-color: rgba(0,188,212,0.35);
-    }
-    .gs-btn--primary:hover{
-      background: rgba(0,188,212,0.24);
-      border-color: rgba(0,188,212,0.55);
-    }
-    .gs-btn--ghost{
-      background: rgba(255,255,255,0.05);
-    }
-
-    .gs-label{
-      display:block;
-      margin: 12px 0 6px;
-      font-size: 0.95rem;
-      opacity: .9;
-    }
-    .gs-input{
-      width: 100%;
-      padding: 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(0,0,0,.25);
-      color:#fff;
-      outline:none;
-      font-family: Poppins, sans-serif;
-    }
-    .gs-form-actions{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      margin-top:14px;
-    }
-
-    /* Make project modal bigger */
-    .gs-modal-card--big{
-      width: min(900px, 94vw);
-    }
-  </style>
 
   <!-- Existing scripts -->
   <script src="/script.js"></script>
   <script src="/store-data.js"></script>
   <script type="module" src="/gallery.js"></script>
 
-  <!-- ======================================================
-       MODAL JS (AFTER HTML)
-  ======================================================= -->
+  <!-- ===============================
+       ✅ Modal JS (must be AFTER modal HTML)
+  ================================ -->
   <script>
   (() => {
-    // ===== Elements (Project modal) =====
     const modal = document.getElementById("gsProjectModal");
     const backdrop = document.getElementById("gsModalBackdrop");
     const closeX = document.getElementById("gsModalCloseX");
     const closeBtn = document.getElementById("gsModalCancelBtn");
 
     const nameEl = document.getElementById("gsModalName");
+    const metaEl = document.getElementById("gsModalMeta");
     const descEl = document.getElementById("gsModalDesc");
     const priceEl = document.getElementById("gsModalPrice");
+
+    const mainImgEl = document.getElementById("gsModalMainImage");
     const galleryEl = document.getElementById("gsModalGallery");
+
     const buyBtn = document.getElementById("gsModalBuyBtn");
-    const openContactBtn = document.getElementById("gsOpenContactBtn");
 
-    // hidden current project values (kept in memory)
-    let currentProject = null;
+    const contactBtn = document.getElementById("gsModalContactBtn");
+    const contactWrap = document.getElementById("gsContactWrap");
+    const hideContactBtn = document.getElementById("gsModalCloseContactBtn");
 
-    // ===== Contact modal =====
-    const contactModal = document.getElementById("gsContactModal");
-    const contactBackdrop = document.getElementById("gsContactBackdrop");
-    const contactCloseX = document.getElementById("gsContactCloseX");
-    const contactCloseBtn = document.getElementById("gsContactCloseBtn");
+    const statusEl = document.getElementById("gsModalStatus");
+    const sendBtn = document.getElementById("gsModalSendBtn");
 
-    const cPid = document.getElementById("gsContactProductId");
-    const cTitle = document.getElementById("gsContactProductTitle");
-    const cStatus = document.getElementById("gsContactStatus");
-    const cSendBtn = document.getElementById("gsContactSendBtn");
+    const pidEl = document.getElementById("gsModalProductId");
+    const ptitleEl = document.getElementById("gsModalProductTitle");
 
     function esc(s){
       return String(s ?? "")
@@ -254,32 +348,53 @@
     }
 
     function openModal(project){
-      currentProject = project || null;
+      // close contact area by default every time
+      contactWrap.classList.remove("is-open");
+      statusEl.textContent = "";
+      if (sendBtn) sendBtn.disabled = false;
+
       lockScroll(true);
+      modal.classList.add("is-open");
+      modal.setAttribute("aria-hidden", "false");
 
       const title = project.title || "Untitled";
       nameEl.textContent = title;
+
+      const cat = (project.category || "other").toUpperCase();
+      const tags = Array.isArray(project.tags) ? project.tags.join(", ") : (project.tags || "");
+      metaEl.textContent = tags ? `${cat} • ${tags}` : cat;
+
+      // ✅ main image always cover
+      const cover = project.cover_image_url || project.image || "/images/hero-image.png";
+      mainImgEl.innerHTML = `
+        <img src="${esc(cover)}" alt="${esc(title)}"
+             onerror="this.onerror=null;this.src='/images/hero-image.png';" />
+      `;
+
+      // ✅ description below main image
       descEl.textContent = project.description || project.desc || "";
 
+      // ✅ extra images below description (expects: extra_images array)
+      const extra = (Array.isArray(project.extra_images) ? project.extra_images : []).filter(Boolean);
+      galleryEl.innerHTML = extra.length
+        ? extra.map(src => `
+            <img src="${esc(src)}" alt="${esc(title)}"
+                 onerror="this.onerror=null;this.src='/images/hero-image.png';" />
+          `).join("")
+        : `<div class="gs-small-muted">No extra pictures.</div>`;
+
+      // price
       const priceText =
         (project.price === "" || project.price == null || isNaN(Number(project.price)))
           ? "—"
           : `$${Number(project.price).toFixed(2)}`;
       priceEl.textContent = priceText;
 
-      // Images (supports multiple)
-      const imgs =
-        (Array.isArray(project.images) && project.images.length ? project.images :
-        (Array.isArray(project.extra_images) && project.extra_images.length ? project.extra_images : []));
+      // hidden fields for contact api
+      pidEl.value = project.id || "";
+      ptitleEl.value = title;
 
-      const fallback = project.cover_image_url || project.image || "/images/hero-image.png";
-      const allImgs = imgs.length ? imgs : [fallback];
-
-      galleryEl.innerHTML = allImgs.map(src => `
-        <img src="${esc(src)}" alt="${esc(title)}"
-             onerror="this.onerror=null;this.src='/images/hero-image.png';" />
-      `).join("");
-
+      // buy button -> addToCart if exists, else open contact
       buyBtn.onclick = () => {
         if (typeof window.addToCart === "function") {
           window.addToCart({
@@ -291,127 +406,99 @@
           if (typeof window.updateCartCount === "function") window.updateCartCount();
           alert("Added to cart ✅");
         } else {
-          alert("Cart system not found. (addToCart missing)");
+          contactWrap.classList.add("is-open");
+          document.getElementById("gsModalYourMessage")?.focus();
         }
       };
-
-      modal.style.display = "block";
     }
 
     function closeModal(){
-      modal.style.display = "none";
-      currentProject = null;
-      // Do NOT unlock scroll if contact modal is open
-      if (!contactModal || contactModal.style.display !== "block") lockScroll(false);
+      modal.classList.remove("is-open");
+      modal.setAttribute("aria-hidden", "true");
+      lockScroll(false);
+      // reset form when closing
+      document.getElementById("gsModalContactForm")?.reset();
+      contactWrap.classList.remove("is-open");
+      statusEl.textContent = "";
+      if (sendBtn) sendBtn.disabled = false;
     }
 
-    function openContactModal(){
-      if (!contactModal) return;
-      if (!currentProject) return alert("No project selected.");
+    // Close handlers
+    backdrop.addEventListener("click", closeModal);
+    closeX.addEventListener("click", closeModal);
+    closeBtn.addEventListener("click", closeModal);
 
-      cPid.value = currentProject.id || "";
-      cTitle.value = currentProject.title || "";
-
-      cStatus.textContent = "";
-      cSendBtn.disabled = false;
-
-      contactModal.style.display = "block";
-      lockScroll(true);
-    }
-
-    function closeContactModal(){
-      if (!contactModal) return;
-      contactModal.style.display = "none";
-      document.getElementById("gsContactForm")?.reset();
-
-      // if main modal still open, keep scroll locked
-      if (!modal || modal.style.display !== "block") lockScroll(false);
-    }
-
-    // ===== Close handlers (Project modal) =====
-    backdrop?.addEventListener("click", closeModal);
-    closeX?.addEventListener("click", closeModal);
-    closeBtn?.addEventListener("click", closeModal);
-
-    // ===== Close handlers (Contact modal) =====
-    openContactBtn?.addEventListener("click", openContactModal);
-    contactBackdrop?.addEventListener("click", closeContactModal);
-    contactCloseX?.addEventListener("click", closeContactModal);
-    contactCloseBtn?.addEventListener("click", closeContactModal);
-
-    // ESC closes top-most modal
+    // Escape closes
     document.addEventListener("keydown", (e) => {
-      if (e.key !== "Escape") return;
-      if (contactModal && contactModal.style.display === "block") return closeContactModal();
-      if (modal && modal.style.display === "block") return closeModal();
+      if (e.key === "Escape" && modal.classList.contains("is-open")) closeModal();
     });
 
+    // Contact toggle
+    contactBtn.addEventListener("click", () => {
+      contactWrap.classList.toggle("is-open");
+      if (contactWrap.classList.contains("is-open")) {
+        document.getElementById("gsModalYourName")?.focus();
+      }
+    });
+    hideContactBtn.addEventListener("click", () => {
+      contactWrap.classList.remove("is-open");
+    });
+
+    // Fetch project list and find by id
     async function fetchProjectById(id){
       const res = await fetch("/api/projects", { cache: "no-store" });
-      const json = await res.json().catch(() => null);
-      if (!json || !json.ok) throw new Error("Cannot load /api/projects");
+      const text = await res.text();
+      let json;
+      try { json = JSON.parse(text); } catch {
+        throw new Error(`API not JSON. HTTP ${res.status}: ${text.slice(0, 120)}`);
+      }
+      if (!res.ok || !json.ok) throw new Error(json.error || `HTTP ${res.status}`);
       const list = json.projects || [];
       return list.find(p => String(p.id) === String(id)) || null;
     }
 
-    // intercept clicks on /project-detail.html?id=... (avoid 404) OR on g-card
+    // ✅ Intercept clicks on project detail links (prevents 404)
     document.addEventListener("click", async (e) => {
-      const link = e.target.closest('a[href*="project-detail.html?id="]');
-      const card = e.target.closest(".g-card");
+      const a = e.target.closest('a[href*="project-detail.html?id="]');
+      if (!a) return;
 
-      if (!link && !card) return;
+      e.preventDefault();
+      e.stopPropagation();
 
-      if (link) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
+      const url = new URL(a.href, location.origin);
+      const id = url.searchParams.get("id");
+      if (!id) return alert("Missing project id.");
 
-      let id = null;
-      if (link) {
-        const url = new URL(link.href, location.origin);
-        id = url.searchParams.get("id");
-      }
-
-      try{
-        // If no id, fallback by title match (better: add data-id in gallery.js)
-        let p = null;
-        if (id) {
-          p = await fetchProjectById(id);
-        } else {
-          const res = await fetch("/api/projects", { cache: "no-store" });
-          const json = await res.json().catch(() => null);
-          if (!json || !json.ok) return;
-
-          const list = json.projects || [];
-          const h = card?.querySelector(".g-title")?.textContent?.trim() || "";
-          p = list.find(x => (x.title || "").trim() === h) || null;
-        }
-
+      try {
+        const p = await fetchProjectById(id);
         if (!p) return alert("Project not found.");
         openModal(p);
-      } catch(err){
-        alert("Modal error: " + err.message);
+      } catch (err) {
+        alert("Modal load error: " + err.message);
+        console.error(err);
       }
     }, true);
 
     // Submit contact form -> /api/contact
-    document.getElementById("gsContactForm")?.addEventListener("submit", async (e) => {
+    document.getElementById("gsModalContactForm").addEventListener("submit", async (e) => {
       e.preventDefault();
 
       const payload = {
-        name: document.getElementById("gsContactName").value.trim(),
-        email: document.getElementById("gsContactEmail").value.trim(),
-        message: document.getElementById("gsContactMessage").value.trim(),
-        productId: cPid.value,
-        productTitle: cTitle.value
+        name: document.getElementById("gsModalYourName").value.trim(),
+        email: document.getElementById("gsModalYourEmail").value.trim(),
+        message: document.getElementById("gsModalYourMessage").value.trim(),
+        productId: pidEl.value,
+        productTitle: ptitleEl.value
       };
 
-      if (!payload.name || !payload.email || !payload.message) return;
+      if (!payload.name || !payload.email || !payload.message) {
+        return alert("Please fill name, email, and message.");
+      }
 
-      cStatus.textContent = "Sending...";
-      cSendBtn.disabled = true;
+      statusEl.textContent = "Sending...";
+      sendBtn.disabled = true;
 
-      try{
+      try {
         const res = await fetch("/api/contact", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -420,23 +507,25 @@
 
         const out = await res.json().catch(() => ({}));
         if (!res.ok || !out.ok) {
-          cStatus.textContent = "Failed";
-          cSendBtn.disabled = false;
+          statusEl.textContent = "Failed";
+          sendBtn.disabled = false;
           return alert("Send failed: " + (out.error || "unknown"));
         }
 
-        cStatus.textContent = "Sent ✅";
+        statusEl.textContent = "Sent ✅";
         alert("Message sent ✅");
-        closeContactModal();
-      } catch(err){
-        cStatus.textContent = "Failed";
-        cSendBtn.disabled = false;
+        closeModal();
+      } catch (err) {
+        statusEl.textContent = "Failed";
+        sendBtn.disabled = false;
         alert("Network error: " + err.message);
       }
     });
 
+    // expose for debug
+    window.__GS_openProjectModal = openModal;
+    window.__GS_closeProjectModal = closeModal;
   })();
   </script>
-
 </body>
 </html>
