@@ -110,6 +110,7 @@
       background: rgba(255,0,80,0.14);
       border-color: rgba(255,0,80,0.28);
     }
+    .gs-btn:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
 
     .gs-buy{
       display:flex;
@@ -280,12 +281,18 @@
   <!-- scripts -->
   <script src="/script.js"></script>
   <script src="/store-data.js"></script>
+
+  <!-- ✅ reCAPTCHA v3 -->
   <script src="https://www.google.com/recaptcha/api.js?render=6Ld1z3QsAAAAAPTDv7VKZy9wYoqSUsoubaBKZ7Jw"></script>
+
+  <!-- ✅ Gallery renderer -->
   <script type="module" src="/gallery.js"></script>
 
-  <!-- ✅ ONLY ONE modal script -->
+  <!-- ✅ ONE modal script (NO DUPLICATES) -->
   <script>
   (() => {
+    const SITE_KEY = "6Ld1z3QsAAAAAPTDv7VKZy9wYoqSUsoubaBKZ7Jw";
+
     const modal = document.getElementById("gsProjectModal");
     const backdrop = document.getElementById("gsModalBackdrop");
     const closeX = document.getElementById("gsModalCloseX");
@@ -325,7 +332,7 @@
     function openModal(project){
       contactWrap.classList.remove("is-open");
       statusEl.textContent = "";
-      if (sendBtn) sendBtn.disabled = false;
+      sendBtn.disabled = false;
 
       lockScroll(true);
       modal.classList.add("is-open");
@@ -335,7 +342,7 @@
       nameEl.textContent = title;
 
       const cat = String(project.category || "other").toUpperCase();
-      const tags = Array.isArray(project.tags) ? project.tags.join(", ") : "";
+      const tags = Array.isArray(project.tags) ? project.tags.join(", ") : (project.tags || "");
       metaEl.textContent = tags ? `${cat} • ${tags}` : cat;
 
       const cover = project.cover_image_url || "/images/hero-image.png";
@@ -346,7 +353,8 @@
 
       descEl.textContent = project.description || project.desc || "";
 
-      const extra = (Array.isArray(project.extra_images) ? project.extra_images : []).filter(Boolean);
+      // ✅ extra images (array)
+      const extra = Array.isArray(project.extra_images) ? project.extra_images.filter(Boolean) : [];
       galleryEl.innerHTML = extra.length
         ? extra.map(src => `
             <img src="${esc(src)}" alt="${esc(title)}"
@@ -354,6 +362,7 @@
           `).join("")
         : `<div class="gs-small-muted">No extra pictures.</div>`;
 
+      // price
       const priceText =
         (project.price === "" || project.price == null || isNaN(Number(project.price)))
           ? "—"
@@ -387,9 +396,10 @@
       document.getElementById("gsModalContactForm")?.reset();
       contactWrap.classList.remove("is-open");
       statusEl.textContent = "";
-      if (sendBtn) sendBtn.disabled = false;
+      sendBtn.disabled = false;
     }
 
+    // close handlers
     backdrop.addEventListener("click", closeModal);
     closeX.addEventListener("click", closeModal);
     closeBtn.addEventListener("click", closeModal);
@@ -398,6 +408,7 @@
       if (e.key === "Escape" && modal.classList.contains("is-open")) closeModal();
     });
 
+    // contact toggle
     contactBtn.addEventListener("click", () => {
       contactWrap.classList.toggle("is-open");
       if (contactWrap.classList.contains("is-open")) {
@@ -408,7 +419,7 @@
       contactWrap.classList.remove("is-open");
     });
 
-    // ✅ open modal by clicking any card (uses gallery.js state)
+    // ✅ open modal by clicking any card
     document.addEventListener("click", (e) => {
       const card = e.target.closest(".g-card");
       if (!card) return;
@@ -423,60 +434,8 @@
       openModal(project);
     });
 
-    // submit contact
+    // ✅ submit contact WITH reCAPTCHA v3 token
     document.getElementById("gsModalContactForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const payload = {
-    name: document.getElementById("gsModalYourName").value.trim(),
-    email: document.getElementById("gsModalYourEmail").value.trim(),
-    message: document.getElementById("gsModalYourMessage").value.trim(),
-    productId: pidEl.value,
-    productTitle: ptitleEl.value
-  };
-
-  if (!payload.name || !payload.email || !payload.message) {
-    return alert("Please fill name, email, and message.");
-  }
-
-  statusEl.textContent = "Verifying...";
-  sendBtn.disabled = true;
-
-  try {
-    // ✅ Execute reCAPTCHA v3
-    const token = await grecaptcha.execute(
-      "6Ld1z3QsAAAAAPTDv7VKZy9wYoqSUsoubaBKZ7Jw",
-      { action: "contact" }
-    );
-
-    payload.recaptchaToken = token;
-
-    statusEl.textContent = "Sending...";
-
-    const res = await fetch("/api/contact", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    const out = await res.json().catch(() => ({}));
-
-    if (!res.ok || !out.ok) {
-      statusEl.textContent = "Failed";
-      sendBtn.disabled = false;
-      return alert("Send failed: " + (out.error || "unknown"));
-    }
-
-    statusEl.textContent = "Sent ✅";
-    alert("Message sent successfully ✅");
-    closeModal();
-
-  } catch (err) {
-    statusEl.textContent = "Failed";
-    sendBtn.disabled = false;
-    alert("Error: " + err.message);
-  }
-});
       e.preventDefault();
 
       const payload = {
@@ -484,17 +443,26 @@
         email: document.getElementById("gsModalYourEmail").value.trim(),
         message: document.getElementById("gsModalYourMessage").value.trim(),
         productId: pidEl.value,
-        productTitle: ptitleEl.value
+        productTitle: ptitleEl.value,
+        recaptchaToken: ""
       };
 
       if (!payload.name || !payload.email || !payload.message) {
         return alert("Please fill name, email, and message.");
       }
 
-      statusEl.textContent = "Sending...";
+      statusEl.textContent = "Verifying...";
       sendBtn.disabled = true;
 
       try {
+        if (!window.grecaptcha) throw new Error("reCAPTCHA not loaded yet.");
+
+        // ✅ v3 token
+        const token = await grecaptcha.execute(SITE_KEY, { action: "contact" });
+        payload.recaptchaToken = token;
+
+        statusEl.textContent = "Sending...";
+
         const res = await fetch("/api/contact", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -514,9 +482,13 @@
       } catch (err) {
         statusEl.textContent = "Failed";
         sendBtn.disabled = false;
-        alert("Network error: " + err.message);
+        alert("Error: " + err.message);
       }
     });
+
+    // debug
+    window.__GS_openModal = openModal;
+    window.__GS_closeModal = closeModal;
   })();
   </script>
 </body>
